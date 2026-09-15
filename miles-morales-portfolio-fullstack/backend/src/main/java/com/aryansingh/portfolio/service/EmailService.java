@@ -3,6 +3,7 @@ package com.aryansingh.portfolio.service;
 import com.aryansingh.portfolio.model.ContactMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
@@ -24,30 +25,42 @@ public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
+    // ObjectProvider, not a direct JavaMailSender dependency: Spring Boot only
+    // registers a JavaMailSender bean when spring.mail.host is set, so a hard
+    // constructor dependency on JavaMailSender would fail app startup
+    // whenever SMTP isn't configured. ObjectProvider defers the lookup until
+    // send time, so this service (and the whole app) boots fine either way.
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final String smtpHost;
     private final String toEmail;
     private final String fromEmail;
 
     public EmailService(
-            JavaMailSender mailSender,
+            ObjectProvider<JavaMailSender> mailSenderProvider,
             @Value("${spring.mail.host:}") String smtpHost,
-            @Value("${app.notify.to-email}") String toEmail,
+            @Value("${app.notify.to-email:}") String toEmail,
             @Value("${app.notify.from-email:}") String fromEmail
     ) {
-        this.mailSender = mailSender;
+        this.mailSenderProvider = mailSenderProvider;
         this.smtpHost = smtpHost;
         this.toEmail = toEmail;
         this.fromEmail = fromEmail;
     }
 
     public void sendContactNotification(ContactMessage message) {
-        if (smtpHost == null || smtpHost.isBlank()) {
+        if (smtpHost == null || smtpHost.isBlank() || toEmail == null || toEmail.isBlank()) {
             log.info(
-                "SMTP_HOST not set — skipping email notification for contact message #{}. "
-                    + "The message is still saved in the database.",
+                "SMTP_HOST or APP_NOTIFY_TO_EMAIL not set — skipping email notification for "
+                    + "contact message #{}. The message is still saved in the database.",
                 message.getId()
             );
+            return;
+        }
+
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender == null) {
+            log.warn("spring.mail.host is set but no JavaMailSender bean is available — skipping "
+                + "email notification for contact message #{}.", message.getId());
             return;
         }
 
