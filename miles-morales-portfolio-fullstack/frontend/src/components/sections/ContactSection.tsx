@@ -9,6 +9,10 @@ export const ContactSection: React.FC = () => {
   const [copied, setCopied] = useState(false);
   const [formSent, setFormSent] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
+  // 'api': backend confirmed the email was queued/sent — no need to bother
+  // the visitor's own mail client. 'mailto': backend wasn't reachable/
+  // configured, so we fall back to opening their mail app instead.
+  const [deliveryMode, setDeliveryMode] = useState<'api' | 'mailto'>('api');
 
   const copyEmail = () => {
     sound.playThwip();
@@ -17,19 +21,28 @@ export const ContactSection: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     sound.playThwip();
+
+    // Try the backend first — when it's configured and reachable, it emails
+    // the message straight to Aryan's inbox itself (see backend EmailService),
+    // no visitor mail client required.
+    const delivered = await submitContactMessage(formData);
+
+    if (delivered) {
+      setDeliveryMode('api');
+    } else {
+      // Backend not deployed / not configured / request failed — fall back
+      // to opening the visitor's own mail client so the message still gets
+      // sent somewhere, even if it now depends on them hitting send.
+      setDeliveryMode('mailto');
+      const subject = encodeURIComponent(`Portfolio Inquiry from ${formData.name}`);
+      const body = encodeURIComponent(`${formData.message}\n\nFrom: ${formData.name} (${formData.email})`);
+      window.open(`mailto:${personal.email}?subject=${subject}&body=${body}`, '_blank');
+    }
+
     setFormSent(true);
-
-    // Persist server-side if a backend is configured (fire-and-forget — the
-    // mailto fallback below is what actually guarantees delivery either way).
-    void submitContactMessage(formData);
-
-    // Open mailto link as practical fallback
-    const subject = encodeURIComponent(`Portfolio Inquiry from ${formData.name}`);
-    const body = encodeURIComponent(`${formData.message}\n\nFrom: ${formData.name} (${formData.email})`);
-    window.open(`mailto:${personal.email}?subject=${subject}&body=${body}`, '_blank');
     setTimeout(() => {
       setFormSent(false);
       setFormData({ name: '', email: '', message: '' });
@@ -46,7 +59,7 @@ export const ContactSection: React.FC = () => {
           <span className="text-borderDark">————</span>
           <span className="text-subtext">DIRECT TRANSMISSION LINK</span>
         </div>
-        <h2 className="font-display text-4xl sm:text-6xl text-white uppercase tracking-tight flex items-center gap-3">
+        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
           <span>SEND A</span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider to-venom-purple">
             WEB SIGNAL
@@ -69,7 +82,7 @@ export const ContactSection: React.FC = () => {
               </span>
               <button
                 onClick={copyEmail}
-                className="inline-flex items-center gap-1 text-[11px] font-mono text-subtext hover:text-white bg-ink px-2 py-1 border border-borderDark transition-colors"
+                className="inline-flex items-center gap-1 text-[11px] font-mono text-subtext hover:text-headline bg-ink px-2 py-1 border border-borderDark transition-colors"
                 title="Copy Email Address"
               >
                 {copied ? (
@@ -89,7 +102,7 @@ export const ContactSection: React.FC = () => {
             <a
               href={`mailto:${personal.email}`}
               onClick={() => sound.playClick()}
-              className="text-lg sm:text-xl font-mono text-white hover:text-spider transition-colors font-bold break-all block"
+              className="text-lg sm:text-xl font-mono text-headline hover:text-spider transition-colors font-bold break-all block"
             >
               {personal.email}
             </a>
@@ -112,11 +125,11 @@ export const ContactSection: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Linkedin className="w-5 h-5 text-spider group-hover:scale-110 transition-transform" />
                 <div>
-                  <div className="font-mono text-xs font-bold text-white uppercase">LinkedIn</div>
+                  <div className="font-mono text-xs font-bold text-headline uppercase">LinkedIn</div>
                   <div className="font-mono text-[10px] text-subtext">/aryan-singh</div>
                 </div>
               </div>
-              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-white transition-colors" />
+              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-headline transition-colors" />
             </a>
 
             <a
@@ -129,11 +142,11 @@ export const ContactSection: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Github className="w-5 h-5 text-spider group-hover:scale-110 transition-transform" />
                 <div>
-                  <div className="font-mono text-xs font-bold text-white uppercase">GitHub</div>
+                  <div className="font-mono text-xs font-bold text-headline uppercase">GitHub</div>
                   <div className="font-mono text-[10px] text-subtext">/datsaryan</div>
                 </div>
               </div>
-              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-white transition-colors" />
+              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-headline transition-colors" />
             </a>
 
             <a
@@ -146,11 +159,11 @@ export const ContactSection: React.FC = () => {
               <div className="flex items-center gap-3">
                 <Terminal className="w-5 h-5 text-graffiti-yellow group-hover:scale-110 transition-transform" />
                 <div>
-                  <div className="font-mono text-xs font-bold text-white uppercase">LeetCode Engineering Profile</div>
+                  <div className="font-mono text-xs font-bold text-headline uppercase">LeetCode Engineering Profile</div>
                   <div className="font-mono text-[10px] text-subtext">Active algorithmic practice & challenges</div>
                 </div>
               </div>
-              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-white transition-colors" />
+              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-headline transition-colors" />
             </a>
           </div>
 
@@ -189,11 +202,13 @@ export const ContactSection: React.FC = () => {
               <div className="w-12 h-12 mx-auto bg-spider text-white flex items-center justify-center font-comic text-2xl shadow-comic-black rotate-6 mb-4">
                 THWIP!
               </div>
-              <h3 className="font-display text-2xl text-white uppercase tracking-wide">
+              <h3 className="font-display text-2xl text-headline uppercase tracking-wide">
                 SIGNAL TRANSMITTED!
               </h3>
               <p className="text-xs sm:text-sm font-mono text-subtext mt-2 max-w-md mx-auto">
-                Opening direct email client transmission to {personal.email}. Your message packet is on the wire.
+                {deliveryMode === 'api'
+                  ? `Delivered straight to ${personal.email}. Aryan will get back to you soon.`
+                  : `Opening your email client to send directly to ${personal.email}.`}
               </p>
             </div>
           ) : (
@@ -208,7 +223,7 @@ export const ContactSection: React.FC = () => {
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   placeholder="e.g. Peter Parker / Hiring Manager"
-                  className="w-full bg-ink border border-borderDark focus:border-spider text-white font-mono text-sm px-4 py-2.5 outline-none transition-colors"
+                  className="w-full bg-ink border border-borderDark focus:border-spider text-headline font-mono text-sm px-4 py-2.5 outline-none transition-colors"
                 />
               </div>
 
@@ -222,7 +237,7 @@ export const ContactSection: React.FC = () => {
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
                   placeholder="name@company.com"
-                  className="w-full bg-ink border border-borderDark focus:border-spider text-white font-mono text-sm px-4 py-2.5 outline-none transition-colors"
+                  className="w-full bg-ink border border-borderDark focus:border-spider text-headline font-mono text-sm px-4 py-2.5 outline-none transition-colors"
                 />
               </div>
 
@@ -236,7 +251,7 @@ export const ContactSection: React.FC = () => {
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
                   placeholder="Detail your mission objective, job opportunity, or collaboration inquiry..."
-                  className="w-full bg-ink border border-borderDark focus:border-spider text-white font-mono text-sm px-4 py-2.5 outline-none transition-colors resize-none"
+                  className="w-full bg-ink border border-borderDark focus:border-spider text-headline font-mono text-sm px-4 py-2.5 outline-none transition-colors resize-none"
                 />
               </div>
 

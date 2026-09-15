@@ -15,7 +15,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose }) 
       <div className="flex items-center justify-between px-6 pt-4 pb-2 border-b border-borderDark/60 bg-surface/50">
         <div className="text-[10px] font-mono text-spider font-bold tracking-widest uppercase flex items-center gap-2">
           <span>// CLASSIFIED DOSSIER</span>
-          <span className="text-white/40">|</span>
+          <span className="text-headline/40">|</span>
           <span>{project.missionNumber}</span>
         </div>
         <div className="flex items-center gap-4">
@@ -28,7 +28,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose }) 
               onClose();
             }}
             aria-label="Close Dossier"
-            className="p-1.5 bg-surface hover:bg-spider text-white transition-colors border border-borderDark focus:outline-none focus:ring-2 focus:ring-spider"
+            className="p-1.5 bg-surface hover:bg-spider text-headline hover:text-white transition-colors border border-borderDark focus:outline-none focus:ring-2 focus:ring-spider"
           >
             <X className="w-4 h-4" />
           </button>
@@ -52,7 +52,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose }) 
             </span>
           </div>
 
-          <h3 className="text-3xl sm:text-4xl font-display uppercase tracking-wide text-white">
+          <h3 className="text-3xl sm:text-4xl font-display uppercase tracking-wide text-headline">
             {project.title}
           </h3>
           <p className="text-sm sm:text-base text-subtext mt-1 font-sans">
@@ -152,7 +152,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose }) 
             sound.playClick();
             onClose();
           }}
-          className="ml-auto px-4 py-2.5 bg-ink hover:bg-concrete text-subtext hover:text-white font-mono text-xs uppercase transition-colors border border-borderDark"
+          className="ml-auto px-4 py-2.5 bg-ink hover:bg-concrete text-subtext hover:text-headline font-mono text-xs uppercase transition-colors border border-borderDark"
         >
           Dismiss [Esc]
         </button>

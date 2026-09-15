@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { sound } from '../../audio/soundEngine';
+import { theme } from '../../theme/themeEngine';
 
 interface SpideyWebOverlayProps {
   originX?: number;
@@ -71,8 +72,11 @@ export const SpideyWebOverlay: React.FC<SpideyWebOverlayProps> = ({
 
       ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-      // Dark translucent backdrop with slight halftone
-      ctx.fillStyle = `rgba(7, 8, 11, ${0.85 * ease})`;
+      // Translucent backdrop, tinted to whichever suit (theme) is active
+      const isLight = theme.get() === 'light';
+      ctx.fillStyle = isLight
+        ? `rgba(236, 232, 222, ${0.92 * ease})`
+        : `rgba(7, 8, 11, ${0.85 * ease})`;
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
       const cx = startX + (targetCenterX - startX) * ease;
@@ -84,7 +88,12 @@ export const SpideyWebOverlay: React.FC<SpideyWebOverlayProps> = ({
         const destX = cx + (pt.x - cx) * ease;
         const destY = cy + (pt.y - cy) * ease;
 
-        ctx.strokeStyle = i % 2 === 0 ? 'rgba(240, 240, 245, 0.45)' : 'rgba(230, 36, 41, 0.35)';
+        ctx.strokeStyle =
+          i % 2 === 0
+            ? isLight
+              ? 'rgba(40, 32, 26, 0.45)'
+              : 'rgba(240, 240, 245, 0.45)'
+            : 'rgba(230, 36, 41, 0.35)';
         ctx.beginPath();
         ctx.moveTo(cx, cy);
         ctx.lineTo(destX, destY);
@@ -100,7 +109,12 @@ export const SpideyWebOverlay: React.FC<SpideyWebOverlayProps> = ({
 
         ctx.beginPath();
         ctx.lineWidth = r === rings ? 2 : 1;
-        ctx.strokeStyle = r % 2 === 0 ? 'rgba(245, 245, 255, 0.4)' : `${accentColor}55`;
+        ctx.strokeStyle =
+          r % 2 === 0
+            ? isLight
+              ? 'rgba(40, 32, 26, 0.4)'
+              : 'rgba(245, 245, 255, 0.4)'
+            : `${accentColor}55`;
 
         spokes.forEach((pt, idx) => {
           const px = cx + (pt.x - cx) * radiusFactor * ringProgress;

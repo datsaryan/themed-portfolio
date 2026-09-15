@@ -48,7 +48,7 @@ export const SkillsSection: React.FC = () => {
           <span className="text-borderDark">————</span>
           <span className="text-subtext">TECHNICAL CAPABILITIES</span>
         </div>
-        <h2 className="font-display text-4xl sm:text-6xl text-white uppercase tracking-tight flex items-center gap-3">
+        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
           <span>THE SUIT</span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider via-venom-purple to-graffiti-yellow">
             SYSTEMS
@@ -91,7 +91,7 @@ export const SkillsSection: React.FC = () => {
               <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-4">
                 <div className="flex items-center gap-2">
                   {getIcon(cat.icon)}
-                  <span className="font-mono text-xs font-bold text-white uppercase tracking-wider">
+                  <span className="font-mono text-xs font-bold text-headline uppercase tracking-wider">
                     {cat.category}
                   </span>
                 </div>
@@ -110,7 +110,7 @@ export const SkillsSection: React.FC = () => {
                 {cat.skills.map((skill) => (
                   <span
                     key={skill}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink text-paper font-mono text-xs font-medium border border-borderDark/80 hover:border-spider hover:text-white transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink text-paper font-mono text-xs font-medium border border-borderDark/80 hover:border-spider hover:text-headline transition-colors"
                   >
                     <span className="w-1.5 h-1.5 rounded-full bg-spider" />
                     <span>{skill}</span>

@@ -16,7 +16,7 @@ export const TimelineSection: React.FC = () => {
           <span className="text-borderDark">————</span>
           <span className="text-subtext">EXPERIENCE & VERIFIED CERTIFICATIONS</span>
         </div>
-        <h2 className="font-display text-4xl sm:text-6xl text-white uppercase tracking-tight flex items-center gap-3">
+        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
           <span>THE JOURNEY &</span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider via-graffiti-yellow to-venom-purple">
             CREDENTIALS
@@ -36,7 +36,7 @@ export const TimelineSection: React.FC = () => {
               <span>CORE ACADEMIC STATION</span>
             </div>
 
-            <h3 className="font-display text-2xl sm:text-3xl text-white uppercase tracking-wide">
+            <h3 className="font-display text-2xl sm:text-3xl text-headline uppercase tracking-wide">
               {education.institution}
             </h3>
             <p className="text-sm font-mono text-subtext mt-1">
@@ -44,7 +44,7 @@ export const TimelineSection: React.FC = () => {
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
-              <span className="px-3 py-1 bg-ink text-white font-mono text-xs border border-spider font-bold">
+              <span className="px-3 py-1 bg-ink text-headline font-mono text-xs border border-spider font-bold">
                 CGPA: {education.cgpa}
               </span>
               <span className="px-3 py-1 bg-ink text-graffiti-yellow font-mono text-xs border border-borderDark flex items-center gap-1">
@@ -95,7 +95,7 @@ export const TimelineSection: React.FC = () => {
                 </div>
 
                 {/* Title */}
-                <h4 className="font-display text-xl text-white uppercase tracking-wide">
+                <h4 className="font-display text-xl text-headline uppercase tracking-wide">
                   {item.title}
                 </h4>
 
@@ -116,7 +116,7 @@ export const TimelineSection: React.FC = () => {
                       target="_blank"
                       rel="noopener noreferrer"
                       onClick={() => sound.playClick()}
-                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink hover:bg-spider text-white font-mono text-xs uppercase font-bold border border-borderDark transition-colors shadow-comic-black"
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink hover:bg-spider text-headline hover:text-white font-mono text-xs uppercase font-bold border border-borderDark transition-colors shadow-comic-black"
                     >
                       <span>VIEW CREDENTIAL</span>
                       <ExternalLink className="w-3 h-3" />

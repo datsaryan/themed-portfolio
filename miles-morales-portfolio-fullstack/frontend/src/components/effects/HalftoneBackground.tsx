@@ -21,10 +21,19 @@ export const HalftoneBackground: React.FC = () => {
       {/* 2. Comic Halftone Screen Pattern */}
       <div className="absolute inset-0 bg-halftone-dots opacity-40 mix-blend-screen" />
 
+      {/* 2b. Site-wide spider-web weave.
+             Tiled lattice across the whole viewport, kept at very low opacity
+             so it reads as texture and never competes with the content. */}
+      <div className="absolute inset-0 bg-web-weave opacity-[0.045]" />
+      <div
+        className="absolute inset-0 bg-web-weave opacity-[0.03]"
+        style={{ backgroundSize: '520px 520px', backgroundPosition: '120px 60px' }}
+      />
+
       {/* 3. Subtle Brooklyn Skyline Silhouette at bottom */}
       <div className="absolute bottom-0 left-0 right-0 h-96 opacity-25 overflow-hidden">
         <svg
-          className="absolute bottom-0 w-full h-full text-ink"
+          className="absolute bottom-0 w-full h-full text-concrete"
           viewBox="0 0 1200 400"
           preserveAspectRatio="none"
           fill="currentColor"
@@ -106,6 +115,69 @@ export const HalftoneBackground: React.FC = () => {
         <path d="M 100,0 Q 80,40 0,100" />
         <path d="M 150,0 Q 120,60 0,150" />
         <path d="M 200,0 Q 160,80 0,200" />
+      </svg>
+
+      {/* 5b. Matching web strands on the bottom corners and mid-edges */}
+      <svg
+        className="absolute -bottom-8 -left-8 w-64 h-64 text-spider/15 pointer-events-none -rotate-90"
+        viewBox="0 0 200 200"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      >
+        <line x1="0" y1="0" x2="200" y2="0" />
+        <line x1="0" y1="0" x2="180" y2="80" />
+        <line x1="0" y1="0" x2="140" y2="140" />
+        <line x1="0" y1="0" x2="80" y2="180" />
+        <line x1="0" y1="0" x2="0" y2="200" />
+        <path d="M 60,0 Q 48,24 0,60" />
+        <path d="M 120,0 Q 96,48 0,120" />
+        <path d="M 190,0 Q 152,76 0,190" />
+      </svg>
+
+      <svg
+        className="absolute -bottom-10 -right-10 w-72 h-72 text-venom-purple/15 pointer-events-none rotate-180"
+        viewBox="0 0 200 200"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.2"
+      >
+        <line x1="0" y1="0" x2="200" y2="0" />
+        <line x1="0" y1="0" x2="180" y2="80" />
+        <line x1="0" y1="0" x2="140" y2="140" />
+        <line x1="0" y1="0" x2="80" y2="180" />
+        <line x1="0" y1="0" x2="0" y2="200" />
+        <path d="M 60,0 Q 48,24 0,60" />
+        <path d="M 120,0 Q 96,48 0,120" />
+        <path d="M 190,0 Q 152,76 0,190" />
+      </svg>
+
+      <svg
+        className="absolute top-1/3 -left-16 w-52 h-52 text-web/10 pointer-events-none rotate-[-35deg]"
+        viewBox="0 0 200 200"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+      >
+        <line x1="0" y1="0" x2="200" y2="0" />
+        <line x1="0" y1="0" x2="150" y2="130" />
+        <line x1="0" y1="0" x2="0" y2="200" />
+        <path d="M 70,0 Q 55,30 0,70" />
+        <path d="M 140,0 Q 110,60 0,140" />
+      </svg>
+
+      <svg
+        className="absolute top-2/3 -right-16 w-52 h-52 text-web/10 pointer-events-none rotate-[140deg]"
+        viewBox="0 0 200 200"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1"
+      >
+        <line x1="0" y1="0" x2="200" y2="0" />
+        <line x1="0" y1="0" x2="150" y2="130" />
+        <line x1="0" y1="0" x2="0" y2="200" />
+        <path d="M 70,0 Q 55,30 0,70" />
+        <path d="M 140,0 Q 110,60 0,140" />
       </svg>
 
       {/* 6. Subtle CRT scanline overlay */}

@@ -47,7 +47,7 @@ export const ProjectsSection: React.FC = () => {
         </div>
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
           <div>
-            <h2 className="font-display text-4xl sm:text-6xl text-white uppercase tracking-tight flex items-center gap-3">
+            <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
               <span>TACTICAL</span>
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider to-graffiti-yellow">
                 MISSIONS
@@ -82,8 +82,13 @@ export const ProjectsSection: React.FC = () => {
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setRippleId(mission.id);
+                  setTimeout(() => setRippleId(null), 420);
+                  sound.playClick();
+                  sound.playThwip();
+                  setWebOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
                   setSelectedProject(mission);
-
                 }
               }}
               aria-label={`Open mission dossier for ${mission.title}`}
@@ -116,7 +121,7 @@ export const ProjectsSection: React.FC = () => {
                 </div>
 
                 {/* Title & Subtitle */}
-                <h3 className="font-display text-2xl sm:text-3xl text-white uppercase tracking-wide group-hover:text-spider transition-colors">
+                <h3 className="font-display text-2xl sm:text-3xl text-headline uppercase tracking-wide group-hover:text-spider transition-colors">
                   {mission.title}
                 </h3>
                 <p className="text-xs sm:text-sm font-mono text-subtext mt-1">

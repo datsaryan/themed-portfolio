@@ -88,6 +88,9 @@ export const HangingSpiderman: React.FC = () => {
     typeof window !== 'undefined' &&
     window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
+  // Never leave the stretch tone humming if this unmounts mid-drag.
+  useEffect(() => () => sound.stopStretch(), []);
+
   // Keep the viewport (and therefore the SVG's 1:1 px coordinate system) current.
   useEffect(() => {
     const onResize = () => setViewport({ x: window.innerWidth, y: window.innerHeight });
@@ -180,6 +183,9 @@ export const HangingSpiderman: React.FC = () => {
     lastPointer.current = { p: { x: e.clientX, y: e.clientY }, t: performance.now() };
     setIsDragging(true);
     setShowSpeech(false);
+    // Continuous creaking-silk tone for as long as the drag lasts.
+    sound.startStretch();
+    sound.updateStretch(0);
   };
 
   const handlePointerMove = (e: React.PointerEvent<SVGGElement>) => {
@@ -191,6 +197,13 @@ export const HangingSpiderman: React.FC = () => {
     };
     lastPointer.current = { p: { x: e.clientX, y: e.clientY }, t: performance.now() };
     setPos({ ...posRef.current });
+
+    // Drive the stretch tone from live geometry rather than render state, so
+    // the pitch tracks the pointer with no frame of lag.
+    const a = anchorRef.current;
+    const liveLen = Math.hypot(posRef.current.x - a.x, posRef.current.y - a.y);
+    const liveStretch = Math.max(0, liveLen - (restRef.current.y - a.y));
+    sound.updateStretch(Math.min(1, liveStretch / FULL_POWER_STRETCH));
   };
 
   const handlePointerUp = (e: React.PointerEvent<SVGGElement>) => {
@@ -199,6 +212,7 @@ export const HangingSpiderman: React.FC = () => {
       e.currentTarget.releasePointerCapture(e.pointerId);
     }
     setIsDragging(false);
+    sound.stopStretch();
 
     const releasedAt = { ...posRef.current };
     const stretch = Math.max(0, dist(releasedAt, restRef.current));

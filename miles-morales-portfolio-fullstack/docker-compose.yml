@@ -29,6 +29,14 @@ services:
       SPRING_DATASOURCE_USERNAME: portfolio
       SPRING_DATASOURCE_PASSWORD: portfolio
       APP_CORS_ALLOWED_ORIGINS: http://localhost:5173
+      # Contact-form email notifications — optional. Leave SMTP_HOST unset
+      # and the backend just logs+skips instead of failing. See README.md.
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      NOTIFY_TO_EMAIL: ${NOTIFY_TO_EMAIL:-aryansobdh@gmail.com}
+      NOTIFY_FROM_EMAIL: ${NOTIFY_FROM_EMAIL:-}
     ports:
       - "8080:8080"
 

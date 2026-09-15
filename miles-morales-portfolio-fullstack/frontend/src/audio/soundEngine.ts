@@ -5,20 +5,35 @@ export interface SongInfo {
   src: string;
 }
 
-// Originally this pointed at a licensed commercial track. That file can't be
-// shipped in this build (copyright), so the "BGM" is an original short
-// procedural loop synthesized live with the Web Audio API — same oscillator
-// approach as the click/thwip/venom effects below, just scheduled on a loop.
-// No audio file involved, so there's nothing that can 404 or go silent for
-// lack of a file.
-export const MILES_SONG: SongInfo = {
+/**
+ * Background music.
+ *
+ * `src` points at a file you supply yourself — drop a track at
+ * `frontend/public/assets/audio/theme.mp3` and it plays on loop with the
+ * title/artist below shown in the HUD. No audio file ships with this repo.
+ *
+ * If the file is missing (or the browser refuses it), the engine silently
+ * falls back to the original short procedural loop synthesized with the Web
+ * Audio API, so the BGM button always does something.
+ */
+export const BGM_TRACK: SongInfo = {
   title: 'Wall-Crawler Groove',
   artist: 'Original Score',
   soundtrack: 'Composed for this build',
-  src: '',
+  src: '/assets/audio/theme.mp3',
 };
 
-type SoundState = { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo };
+/** Back-compat alias — older imports used MILES_SONG. */
+export const MILES_SONG = BGM_TRACK;
+
+type SoundState = {
+  isMuted: boolean;
+  volume: number;
+  isPlaying: boolean;
+  song: SongInfo;
+  /** True when the real audio file is playing, false when on the procedural fallback. */
+  usingFile: boolean;
+};
 
 class SoundEngine {
   private ctx: AudioContext | null = null;
@@ -30,6 +45,23 @@ class SoundEngine {
   private bgmTimer: number | null = null;
   private bgmScheduledUntil: number = 0;
   private listeners: Set<(state: SoundState) => void> = new Set();
+
+  // File-based BGM (optional — see BGM_TRACK above)
+  private audioEl: HTMLAudioElement | null = null;
+  private usingFile: boolean = false;
+
+  // Continuous web-stretch tone
+  private stretchOsc: OscillatorNode | null = null;
+  private stretchSub: OscillatorNode | null = null;
+  private stretchNoise: AudioBufferSourceNode | null = null;
+  private stretchFilter: BiquadFilterNode | null = null;
+  private stretchGain: GainNode | null = null;
+  private stretchWanted: boolean = false;
+
+  // Click de-duplication: App.tsx has a global click listener AND individual
+  // components call playClick(), so the same tap could fire the sound 2-3
+  // times and read as a smeared/delayed click.
+  private lastClickAt: number = 0;
 
   // A2-rooted minor-pentatonic walk, purely original.
   private readonly BGM_BAR_SECONDS = 0.42;
@@ -147,6 +179,53 @@ class SoundEngine {
     this.bgmScheduledUntil = startAt + this.BGM_BASS_NOTES.length * barLen;
   }
 
+  /**
+   * Tries the real audio file first. Resolves false if there's no file at
+   * BGM_TRACK.src (404s reject play()), so the caller can fall back.
+   */
+  private async tryStartFile(): Promise<boolean> {
+    if (!BGM_TRACK.src) return false;
+    if (typeof Audio === 'undefined') return false;
+
+    if (!this.audioEl) {
+      this.audioEl = new Audio(BGM_TRACK.src);
+      this.audioEl.loop = true;
+      this.audioEl.preload = 'auto';
+    }
+    this.audioEl.volume = this.volume;
+
+    try {
+      await this.audioEl.play();
+      this.usingFile = true;
+      return true;
+    } catch {
+      this.usingFile = false;
+      return false;
+    }
+  }
+
+  private stopFile() {
+    if (this.audioEl) {
+      this.audioEl.pause();
+    }
+    this.usingFile = false;
+  }
+
+  /** Starts the file track if available, else the procedural loop. */
+  private async startBgm() {
+    const fileOk = await this.tryStartFile();
+    if (!fileOk && !this.isBgmPlaying) {
+      this.startBgmLoop();
+    }
+    this.isBgmPlaying = true;
+    this.notify();
+  }
+
+  private stopBgm() {
+    this.stopFile();
+    this.stopBgmLoop();
+  }
+
   private startBgmLoop() {
     if (!this.ctx) return;
     this.ensureBgmGain();
@@ -174,7 +253,7 @@ class SoundEngine {
     this.isMuted = false;
     this.ensureBgmGain();
     if (this.bgmGain) this.bgmGain.gain.value = this.volume;
-    if (!this.isBgmPlaying) this.startBgmLoop();
+    void this.startBgm();
 
     localStorage.setItem('spider_sound_muted', 'false');
     this.notify();
@@ -188,12 +267,12 @@ class SoundEngine {
     this.isMuted = !this.isMuted;
 
     if (this.isMuted) {
-      this.stopBgmLoop();
+      this.stopBgm();
       if (this.bgmGain) this.bgmGain.gain.value = 0;
     } else {
       this.ensureBgmGain();
       if (this.bgmGain) this.bgmGain.gain.value = this.volume;
-      this.startBgmLoop();
+      void this.startBgm();
     }
 
     void this.playClick();
@@ -212,6 +291,9 @@ class SoundEngine {
     if (this.bgmGain && !this.isMuted) {
       this.bgmGain.gain.value = this.volume;
     }
+    if (this.audioEl) {
+      this.audioEl.volume = this.volume;
+    }
     localStorage.setItem('spider_sound_volume', String(this.volume));
     this.notify();
   }
@@ -221,7 +303,8 @@ class SoundEngine {
       isMuted: this.isMuted,
       volume: this.volume,
       isPlaying: !this.isMuted && this.isBgmPlaying,
-      song: MILES_SONG,
+      song: BGM_TRACK,
+      usingFile: this.usingFile,
     };
   }
 
@@ -242,8 +325,137 @@ class SoundEngine {
   // schedules against a live, running AudioContext — see the comment on
   // ensureRunning() for why that matters.
 
+
+  // --- Continuous web-stretch tone -------------------------------------
+  // Held for the whole duration of a drag: a creaking silk strand whose
+  // pitch, brightness and loudness all climb with tension. startStretch()
+  // on pointerdown, updateStretch(0..1) on every move, stopStretch() on
+  // release (playWebSnap() then covers the release itself).
+
+  public startStretch() {
+    this.stretchWanted = true;
+    void this.ensureRunning().then((running) => {
+      // A release may have landed while the context was still resuming.
+      if (!running || !this.stretchWanted || !this.ctx || !this.masterGain) return;
+      if (this.stretchOsc) return; // already running
+
+      const now = this.ctx.currentTime;
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.connect(this.masterGain);
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.frequency.setValueAtTime(600, now);
+      filter.Q.setValueAtTime(4, now);
+      filter.connect(gain);
+
+      // Strand tone: sawtooth through the bandpass reads as taut fibre.
+      const osc = this.ctx.createOscillator();
+      osc.type = 'sawtooth';
+      osc.frequency.setValueAtTime(120, now);
+      osc.connect(filter);
+      osc.start(now);
+
+      // Sub layer gives the pull some body at low tension.
+      const sub = this.ctx.createOscillator();
+      const subGain = this.ctx.createGain();
+      sub.type = 'sine';
+      sub.frequency.setValueAtTime(70, now);
+      subGain.gain.setValueAtTime(0.35, now);
+      sub.connect(subGain);
+      subGain.connect(gain);
+      sub.start(now);
+
+      // Looping noise bed = the creak/fray as the silk is pulled.
+      const bufSize = Math.floor(this.ctx.sampleRate * 0.5);
+      const buf = this.ctx.createBuffer(1, bufSize, this.ctx.sampleRate);
+      const data = buf.getChannelData(0);
+      for (let i = 0; i < bufSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.5;
+      }
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buf;
+      noise.loop = true;
+      const noiseGain = this.ctx.createGain();
+      noiseGain.gain.setValueAtTime(0.25, now);
+      noise.connect(noiseGain);
+      noiseGain.connect(filter);
+      noise.start(now);
+
+      this.stretchOsc = osc;
+      this.stretchSub = sub;
+      this.stretchNoise = noise;
+      this.stretchFilter = filter;
+      this.stretchGain = gain;
+
+      // Fade in so grabbing doesn't click
+      gain.gain.exponentialRampToValueAtTime(0.02, now + 0.08);
+    });
+  }
+
+  /** tension: 0 (slack) .. 1 (fully stretched). Safe to call every frame. */
+  public updateStretch(tension: number) {
+    if (!this.ctx || !this.stretchOsc || !this.stretchGain || !this.stretchFilter) return;
+    const t = Math.max(0, Math.min(1, tension));
+    const now = this.ctx.currentTime;
+    const ramp = 0.06; // short glide keeps it smooth instead of zippering
+
+    // Pitch climbs roughly an octave and a half as the strand goes taut.
+    this.stretchOsc.frequency.setTargetAtTime(110 + t * 290, now, ramp);
+    if (this.stretchSub) {
+      this.stretchSub.frequency.setTargetAtTime(62 + t * 70, now, ramp);
+    }
+    // Brighter and louder under load.
+    this.stretchFilter.frequency.setTargetAtTime(520 + t * 2200, now, ramp);
+    this.stretchFilter.Q.setTargetAtTime(3 + t * 7, now, ramp);
+    this.stretchGain.gain.setTargetAtTime(0.02 + t * 0.16, now, ramp);
+  }
+
+  public stopStretch() {
+    this.stretchWanted = false;
+    if (!this.ctx || !this.stretchGain) {
+      this.stretchOsc = null;
+      this.stretchSub = null;
+      this.stretchNoise = null;
+      this.stretchFilter = null;
+      this.stretchGain = null;
+      return;
+    }
+
+    const now = this.ctx.currentTime;
+    const gain = this.stretchGain;
+    const osc = this.stretchOsc;
+    const sub = this.stretchSub;
+    const noise = this.stretchNoise;
+
+    gain.gain.cancelScheduledValues(now);
+    gain.gain.setValueAtTime(Math.max(gain.gain.value, 0.0001), now);
+    gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
+
+    const stopAt = now + 0.15;
+    try {
+      osc?.stop(stopAt);
+      sub?.stop(stopAt);
+      noise?.stop(stopAt);
+    } catch {
+      /* already stopped */
+    }
+
+    this.stretchOsc = null;
+    this.stretchSub = null;
+    this.stretchNoise = null;
+    this.stretchFilter = null;
+    this.stretchGain = null;
+  }
+
   /** Classic retro tactile/mechanical UI click — a dual-transient switch click. */
   public playClick() {
+    const stamp = typeof performance !== 'undefined' ? performance.now() : Date.now();
+    if (stamp - this.lastClickAt < 70) return;
+    this.lastClickAt = stamp;
+
     void this.ensureRunning().then((running) => {
       if (!running || !this.ctx || !this.masterGain) return;
       const now = this.ctx.currentTime;

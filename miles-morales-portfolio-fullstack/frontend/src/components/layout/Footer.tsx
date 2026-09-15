@@ -24,7 +24,7 @@ export const Footer: React.FC = () => {
                 className="w-4 h-4"
               />
             </div>
-            <span className="font-display text-lg tracking-wider text-white">
+            <span className="font-display text-lg tracking-wider text-headline">
               ARYAN SINGH
             </span>
             <span className="font-mono text-xs text-spider font-bold">
@@ -80,7 +80,7 @@ export const Footer: React.FC = () => {
         <div>
           <button
             onClick={scrollToTop}
-            className="flex items-center gap-2 px-4 py-2.5 bg-surface hover:bg-concrete border border-borderDark hover:border-spider text-white font-mono text-xs uppercase font-bold tracking-wider transition-colors"
+            className="flex items-center gap-2 px-4 py-2.5 bg-surface hover:bg-concrete border border-borderDark hover:border-spider text-headline font-mono text-xs uppercase font-bold tracking-wider transition-colors"
           >
             <span>SLING TO APEX</span>
             <ArrowUp className="w-4 h-4 text-spider" />

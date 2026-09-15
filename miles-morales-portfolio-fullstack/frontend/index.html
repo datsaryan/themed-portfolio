@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="dark scroll-smooth">
+<html lang="en" class="scroll-smooth">
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -16,6 +16,18 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Bangers&family=JetBrains+Mono:wght@400;600;700&family=Oswald:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+      // Applies the saved palette before first paint so the light theme never
+      // flashes dark on load. Mirrors src/theme/themeEngine.ts.
+      (function () {
+        try {
+          var saved = localStorage.getItem('spider_theme');
+          var light = saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches);
+          if (light) document.documentElement.classList.add('light');
+          document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body class="bg-void text-web font-sans antialiased selection:bg-spider selection:text-white overflow-x-hidden">
     <div id="root"></div>

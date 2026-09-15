@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useResumeData } from '../../data/useResumeData';
-import { sound, SongInfo } from '../../audio/soundEngine';
+import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
 import { ArrowDown, FileText, Send, Radio, Terminal, Zap, Headphones, Play, Pause } from 'lucide-react';
 
 interface HeroSectionProps {
@@ -12,7 +12,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
   const [audioState, setAudioState] = useState(sound.getState());
 
   useEffect(() => {
-    const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo }) => setAudioState(st));
+    const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
     return () => unsub();
   }, []);
 
@@ -59,7 +59,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
 
           {/* Main Giant Display Typography */}
           <div className="space-y-1">
-            <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl tracking-tight text-white uppercase leading-[0.9] select-none">
+            <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl tracking-tight text-headline uppercase leading-[0.9] select-none">
               <span className="block text-paper">ARYAN</span>
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-spider via-spider-bright to-venom-purple glitch-hover">
                 SINGH
@@ -99,7 +99,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => sound.playClick()}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-surface hover:bg-concrete border border-borderDark hover:border-spider text-white font-mono text-xs uppercase font-bold tracking-wider transition-all"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-surface hover:bg-concrete border border-borderDark hover:border-spider text-headline font-mono text-xs uppercase font-bold tracking-wider transition-all"
             >
               <FileText className="w-4 h-4 text-spider" />
               <span>ACCESS FULL RESUME</span>
@@ -107,7 +107,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
 
             <button
               onClick={scrollToContact}
-              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-transparent hover:bg-surface border border-borderDark text-subtext hover:text-white font-mono text-xs uppercase font-medium transition-all"
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-transparent hover:bg-surface border border-borderDark text-subtext hover:text-headline font-mono text-xs uppercase font-medium transition-all"
             >
               <Send className="w-3.5 h-3.5" />
               <span>TRANSMIT SIGNAL</span>
@@ -118,8 +118,8 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
           <div className="w-full">
             <button
               onClick={() => sound.toggleSong()}
-              className="w-full flex items-center justify-between p-3 bg-surface/90 hover:bg-ink border border-spider/60 hover:border-spider text-white transition-all shadow-comic-black group"
-              title="Play Sunflower by Post Malone & Swae Lee (Spider-Man: Into the Spider-Verse)"
+              className="w-full flex items-center justify-between p-3 bg-surface/90 hover:bg-ink border border-spider/60 hover:border-spider text-headline transition-all shadow-comic-black group"
+              title={`${audioState.isPlaying ? 'Pause' : 'Play'} ${BGM_TRACK.title} — ${BGM_TRACK.artist}`}
             >
               <div className="flex items-center gap-3">
                 <div className={`p-2 border ${audioState.isPlaying ? 'bg-spider border-white text-white' : 'bg-concrete border-borderDark text-spider'}`}>
@@ -130,11 +130,11 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
                     <span>MILES' SOUNDTRACK // BGM</span>
                     {audioState.isPlaying && <span className="w-1.5 h-1.5 rounded-full bg-spider animate-ping" />}
                   </span>
-                  <span className="text-xs sm:text-sm font-display uppercase tracking-wider text-white group-hover:text-graffiti-yellow">
-                    Sunflower &bull; Post Malone & Swae Lee
+                  <span className="text-xs sm:text-sm font-display uppercase tracking-wider text-headline group-hover:text-graffiti-yellow">
+                    {BGM_TRACK.title} &bull; {BGM_TRACK.artist}
                   </span>
                   <span className="text-[10px] font-mono text-subtext">
-                    Spider-Man: Into the Spider-Verse Original Soundtrack
+                    {BGM_TRACK.soundtrack}
                   </span>
                 </div>
               </div>
@@ -159,7 +159,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
           <div className="grid grid-cols-3 gap-3 pt-4 border-t border-borderDark/60 w-full font-mono text-[11px]">
             <div className="flex flex-col">
               <span className="text-subtext/70">OPERATIONAL STATUS</span>
-              <span className="text-white font-bold flex items-center gap-1.5 mt-0.5">
+              <span className="text-headline font-bold flex items-center gap-1.5 mt-0.5">
                 <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
                 ACTIVE OPERATIVE
               </span>
@@ -190,7 +190,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
             {/* Top Comic Header Tape */}
             <div className="flex items-center justify-between border-b border-borderDark pb-2 mb-3 font-mono text-[10px] text-subtext">
               <span className="text-spider font-bold tracking-widest">// SUIT RECON HUD</span>
-              <span className="bg-concrete px-1.5 py-0.5 text-white">EARTH-1610</span>
+              <span className="bg-concrete px-1.5 py-0.5 text-headline">EARTH-1610</span>
             </div>
 
             {/* Visual Spider-Man Graphic Silhouette & Web Core */}

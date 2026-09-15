@@ -16,7 +16,7 @@ export const AboutSection: React.FC = () => {
           <span className="text-borderDark">————</span>
           <span className="text-subtext">BACKGROUND PROTOCOL</span>
         </div>
-        <h2 className="font-display text-4xl sm:text-6xl text-white uppercase tracking-tight flex items-center gap-3">
+        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
           <span>THE PERSON BEHIND</span>
           <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider to-venom-purple">
             THE MASK
@@ -43,7 +43,7 @@ export const AboutSection: React.FC = () => {
 
           <div className="space-y-4 text-paper/90 leading-relaxed font-sans text-sm sm:text-base">
             <p>
-              I am a <strong className="text-white font-semibold">Full Stack Engineer</strong> and Computer Science undergraduate with hands-on experience designing end-to-end web applications. My work spans the entire lifecycle: from relational schema design and Spring Boot REST micro-architectures to high-performance React frontends.
+              I am a <strong className="text-headline font-semibold">Full Stack Engineer</strong> and Computer Science undergraduate with hands-on experience designing end-to-end web applications. My work spans the entire lifecycle: from relational schema design and Spring Boot REST micro-architectures to high-performance React frontends.
             </p>
             <p>
               I specialize in robust software infrastructure — implementing practical authentication, role-based access control (RBAC), multi-tenant isolation, and continuous Flyway database migrations.
@@ -81,7 +81,7 @@ export const AboutSection: React.FC = () => {
               </span>
             </div>
 
-            <h3 className="font-display text-2xl text-white uppercase tracking-wide">
+            <h3 className="font-display text-2xl text-headline uppercase tracking-wide">
               {education.institution}
             </h3>
             <p className="text-sm text-subtext mt-1 font-mono">
@@ -89,7 +89,7 @@ export const AboutSection: React.FC = () => {
             </p>
 
             <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="px-3 py-1 bg-surface border border-spider text-white font-mono text-xs font-bold">
+              <div className="px-3 py-1 bg-surface border border-spider text-headline font-mono text-xs font-bold">
                 CGPA: {education.cgpa}
               </div>
               <div className="px-3 py-1 bg-surface border border-borderDark text-graffiti-yellow font-mono text-xs">
@@ -112,7 +112,7 @@ export const AboutSection: React.FC = () => {
                 {education.relevantCoursework.map((course) => (
                   <span
                     key={course}
-                    className="px-2.5 py-1 bg-ink text-paper/80 font-mono text-xs border border-borderDark hover:border-spider hover:text-white transition-colors cursor-default"
+                    className="px-2.5 py-1 bg-ink text-paper/80 font-mono text-xs border border-borderDark hover:border-spider hover:text-headline transition-colors cursor-default"
                   >
                     {course}
                   </span>

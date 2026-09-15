@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Volume2, VolumeX, Zap, Menu, X, FileDown, Music, Play, Pause } from 'lucide-react';
-import { sound, SongInfo, MILES_SONG } from '../../audio/soundEngine';
+import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
+import { WebShooterToggle } from '../effects/WebShooterToggle';
 
 interface NavbarProps {
   onTriggerVenom: () => void;
@@ -13,7 +14,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
   const [showVolumePopup, setShowVolumePopup] = useState(false);
 
   useEffect(() => {
-    const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo }) => setAudioState(st));
+    const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 40);
     };
@@ -72,7 +73,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
           </div>
 
           <div className="flex flex-col">
-            <span className="font-display text-lg tracking-wider text-white group-hover:text-spider transition-colors">
+            <span className="font-display text-lg tracking-wider text-headline group-hover:text-spider transition-colors">
               ARYAN SINGH
             </span>
             <span className="font-mono text-[10px] text-subtext tracking-widest uppercase">
@@ -87,7 +88,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
             <button
               key={item.label}
               onClick={() => handleNavClick(item.href)}
-              className="relative px-3 py-1.5 text-xs font-mono font-medium text-subtext hover:text-white transition-colors group flex items-center gap-1.5"
+              className="relative px-3 py-1.5 text-xs font-mono font-medium text-subtext hover:text-headline transition-colors group flex items-center gap-1.5"
             >
               <span className="text-[10px] text-spider/70 group-hover:text-spider font-bold">
                 {item.badge}
@@ -100,6 +101,9 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
 
         {/* HUD Controls (Audio, Venom charge, Resume) */}
         <div className="flex items-center gap-2 sm:gap-3">
+          {/* Web Shooter: fires a web across the screen and swaps the palette */}
+          <WebShooterToggle />
+
           {/* Venom Charge Meter / Easter Egg Trigger */}
           <button
             onClick={() => {
@@ -111,7 +115,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
           >
             <Zap className="w-3.5 h-3.5 fill-venom-purple animate-pulse" />
             <span className="hidden sm:inline">VENOM</span>
-            <span className="bg-venom-purple/20 px-1 py-0.2 text-[10px] text-white">100%</span>
+            <span className="bg-venom-purple/20 px-1 py-0.2 text-[10px] text-headline">100%</span>
           </button>
 
           {/* Miles Morales BGM Song Controller */}
@@ -119,18 +123,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
             <button
               onClick={() => sound.toggleSong()}
               onMouseEnter={() => setShowVolumePopup(true)}
-              title={audioState.isPlaying ? `Pause ${MILES_SONG.title}` : `Play ${MILES_SONG.title} (${MILES_SONG.artist})`}
+              title={audioState.isPlaying ? `Pause ${BGM_TRACK.title}` : `Play ${BGM_TRACK.title} (${BGM_TRACK.artist})`}
               className={`flex items-center gap-2 px-2.5 py-1.5 border transition-all text-xs font-mono ${
                 audioState.isPlaying
-                  ? 'bg-spider/20 border-spider text-white shadow-spider-glow'
-                  : 'bg-surface border-borderDark text-subtext hover:text-white'
+                  ? 'bg-spider/20 border-spider text-headline shadow-spider-glow'
+                  : 'bg-surface border-borderDark text-subtext hover:text-headline'
               }`}
             >
               <Music className={`w-3.5 h-3.5 ${audioState.isPlaying ? 'text-spider animate-spin' : 'text-subtext'}`} style={{ animationDuration: '4s' }} />
               
               <div className="hidden lg:flex items-center gap-1.5 text-left">
-                <span className="font-bold text-graffiti-yellow">{MILES_SONG.title.toUpperCase()}</span>
-                <span className="text-[10px] text-subtext/80 hidden xl:inline">// {MILES_SONG.artist.toUpperCase()}</span>
+                <span className="font-bold text-graffiti-yellow">{BGM_TRACK.title.toUpperCase()}</span>
+                <span className="text-[10px] text-subtext/80 hidden xl:inline">// {BGM_TRACK.artist.toUpperCase()}</span>
               </div>
 
               {audioState.isPlaying ? (
@@ -162,13 +166,18 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
                   <span className="text-spider font-bold">MILES MORALES BGM</span>
                   <span>{Math.round(audioState.volume * 100)}%</span>
                 </div>
-                <div className="text-[11px] font-mono text-white truncate">
-                  {MILES_SONG.title} — {MILES_SONG.artist}
+                <div className="text-[11px] font-mono text-headline truncate">
+                  {BGM_TRACK.title} — {BGM_TRACK.artist}
                 </div>
+                {audioState.isPlaying && !audioState.usingFile && (
+                  <div className="text-[9px] font-mono text-subtext leading-tight">
+                    NO TRACK FILE FOUND — PLAYING PROCEDURAL SCORE
+                  </div>
+                )}
                 <div className="flex items-center gap-2">
                   <button
                     onClick={() => sound.toggleMute()}
-                    className="text-subtext hover:text-white"
+                    className="text-subtext hover:text-headline"
                   >
                     {audioState.isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-spider" />}
                   </button>
@@ -204,7 +213,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
               sound.playClick();
               setMobileMenuOpen(!mobileMenuOpen);
             }}
-            className="md:hidden p-2 bg-surface border border-borderDark text-white hover:bg-concrete"
+            className="md:hidden p-2 bg-surface border border-borderDark text-headline hover:bg-concrete"
             aria-label="Toggle Navigation Menu"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -226,14 +235,14 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
               <div className="flex items-center gap-2">
                 <Music className="w-4 h-4 text-spider" />
                 <div>
-                  <div className="font-mono text-xs font-bold text-white">{MILES_SONG.title}</div>
-                  <div className="font-mono text-[10px] text-subtext">{MILES_SONG.artist}</div>
+                  <div className="font-mono text-xs font-bold text-headline">{BGM_TRACK.title}</div>
+                  <div className="font-mono text-[10px] text-subtext">{BGM_TRACK.artist}</div>
                 </div>
               </div>
               <button
                 onClick={() => sound.toggleSong()}
                 className={`px-3 py-1 font-mono text-xs font-bold uppercase flex items-center gap-1 ${
-                  audioState.isPlaying ? 'bg-spider text-white' : 'bg-concrete text-white'
+                  audioState.isPlaying ? 'bg-spider text-white' : 'bg-concrete text-headline'
                 }`}
               >
                 {audioState.isPlaying ? <><Pause className="w-3 h-3" /> PAUSE</> : <><Play className="w-3 h-3" /> PLAY</>}
@@ -244,7 +253,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
               <button
                 key={item.label}
                 onClick={() => handleNavClick(item.href)}
-                className="flex items-center justify-between p-2.5 text-left font-display text-lg tracking-wider text-white hover:text-spider hover:bg-surface border border-transparent hover:border-borderDark transition-all"
+                className="flex items-center justify-between p-2.5 text-left font-display text-lg tracking-wider text-headline hover:text-spider hover:bg-surface border border-transparent hover:border-borderDark transition-all"
               >
                 <span>{item.label}</span>
                 <span className="font-mono text-xs text-spider">{item.badge}</span>
@@ -262,6 +271,8 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
                 <FileDown className="w-4 h-4" />
                 Download CV
               </a>
+
+              <WebShooterToggle compact />
 
               <button
                 onClick={() => {
