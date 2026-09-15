@@ -10,6 +10,30 @@
   --color-venom: #a855f7;
 }
 
+/* Native cursor is fully replaced by the custom reticle in CustomCursor.tsx.
+   Scoped to fine pointers so touch devices are untouched, and disabled under
+   prefers-reduced-motion / forced-colors so the OS cursor always comes back
+   for anyone who needs it. */
+@media (pointer: fine) {
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    cursor: none !important;
+  }
+}
+
+@media (forced-colors: active) {
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    cursor: auto !important;
+  }
+}
+
 /* Custom Sleek Dark Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
