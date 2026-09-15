@@ -4,6 +4,7 @@ import com.aryansingh.portfolio.dto.ContactRequest;
 import com.aryansingh.portfolio.dto.ContactResponse;
 import com.aryansingh.portfolio.model.ContactMessage;
 import com.aryansingh.portfolio.repository.ContactMessageRepository;
+import com.aryansingh.portfolio.service.EmailService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Sort;
@@ -25,12 +26,14 @@ import java.util.List;
 public class ContactController {
 
     private final ContactMessageRepository contactMessageRepository;
+    private final EmailService emailService;
 
     @Value("${app.admin.api-key}")
     private String adminApiKey;
 
-    public ContactController(ContactMessageRepository contactMessageRepository) {
+    public ContactController(ContactMessageRepository contactMessageRepository, EmailService emailService) {
         this.contactMessageRepository = contactMessageRepository;
+        this.emailService = emailService;
     }
 
     @PostMapping
@@ -42,6 +45,10 @@ public class ContactController {
         message.setSubmittedAt(Instant.now());
 
         ContactMessage saved = contactMessageRepository.save(message);
+
+        // Persisted first, emailed second: the submission is never lost even
+        // if the SMTP relay is down or unconfigured.
+        emailService.sendContactNotification(saved);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)

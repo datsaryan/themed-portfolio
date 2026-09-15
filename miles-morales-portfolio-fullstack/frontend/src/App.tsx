@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { HalftoneBackground } from './components/effects/HalftoneBackground';
 import { CustomCursor } from './components/effects/CustomCursor';
 import { HangingSpiderman } from './components/effects/HangingSpiderman';
+import { ScrollWebFall } from './components/effects/ScrollWebFall';
 import { Navbar } from './components/layout/Navbar';
 import { HeroSection } from './components/sections/HeroSection';
 import { AboutSection } from './components/sections/AboutSection';
@@ -63,6 +64,9 @@ export function App() {
 
       {/* Interactive custom reticle cursor */}
       <CustomCursor />
+
+      {/* Spider silk drops in from the top while the page is scrolled */}
+      <ScrollWebFall />
 
       {/* Hanging Upside-Down Spider-Man (Miles Morales) in the top-left corner */}
       <HangingSpiderman />
