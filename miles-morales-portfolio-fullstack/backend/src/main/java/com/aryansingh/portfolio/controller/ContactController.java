@@ -46,8 +46,8 @@ public class ContactController {
 
         ContactMessage saved = contactMessageRepository.save(message);
 
-        // Persisted first, emailed second: the submission is never lost even
-        // if the SMTP relay is down or unconfigured.
+        // Best-effort notification — EmailService never throws, so a broken
+        // or unconfigured SMTP setup can't turn this into a failed submission.
         emailService.sendContactNotification(saved);
 
         return ResponseEntity

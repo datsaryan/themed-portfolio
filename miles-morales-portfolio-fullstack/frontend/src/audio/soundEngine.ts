@@ -17,9 +17,9 @@ export interface SongInfo {
  * Audio API, so the BGM button always does something.
  */
 export const BGM_TRACK: SongInfo = {
-  title: 'Wall-Crawler Groove',
-  artist: 'Original Score',
-  soundtrack: 'Composed for this build',
+  title: 'Closer',
+  artist: 'The Chainsmokers ft. Halsey',
+  soundtrack: 'Drop your own licensed copy in to play it',
   src: '/assets/audio/theme.mp3',
 };
 
