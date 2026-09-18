@@ -1,18 +1,32 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import { HalftoneBackground } from './components/effects/HalftoneBackground';
 import { CustomCursor } from './components/effects/CustomCursor';
 import { HangingSpiderman } from './components/effects/HangingSpiderman';
 import { ScrollWebFall } from './components/effects/ScrollWebFall';
 import { Navbar } from './components/layout/Navbar';
-import { HeroSection } from './components/sections/HeroSection';
-import { AboutSection } from './components/sections/AboutSection';
-import { SkillsSection } from './components/sections/SkillsSection';
-import { ProjectsSection } from './components/sections/ProjectsSection';
-import { TimelineSection } from './components/sections/TimelineSection';
-import { ContactSection } from './components/sections/ContactSection';
+import { HomePage } from './pages/HomePage';
+import { AboutPage } from './pages/AboutPage';
+import { SkillsPage } from './pages/SkillsPage';
+import { ProjectsPage } from './pages/ProjectsPage';
+import { TimelinePage } from './pages/TimelinePage';
+import { ContactPage } from './pages/ContactPage';
+import { NotFoundPage } from './pages/NotFoundPage';
 import { Footer } from './components/layout/Footer';
 import { VenomBlastOverlay } from './components/eastereggs/VenomBlastOverlay';
 import { sound } from './audio/soundEngine';
+
+// Resets scroll position to the top whenever the route changes, since the
+// browser doesn't do this automatically for client-side navigation.
+function ScrollToTop() {
+  const { pathname } = useLocation();
+
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'auto' });
+  }, [pathname]);
+
+  return null;
+}
 
 export function App() {
   const [venomActive, setVenomActive] = useState(false);
@@ -80,14 +94,20 @@ export function App() {
       {/* Top HUD Navigation */}
       <Navbar onTriggerVenom={triggerVenom} />
 
-      {/* Main Experience Stream */}
-      <main className="relative z-10">
-        <HeroSection onTriggerVenom={triggerVenom} />
-        <AboutSection />
-        <SkillsSection />
-        <ProjectsSection />
-        <TimelineSection />
-        <ContactSection />
+      {/* Resets scroll to top on every route change */}
+      <ScrollToTop />
+
+      {/* Main Experience Stream — each section now lives on its own page/route */}
+      <main className="relative z-10 min-h-[60vh]">
+        <Routes>
+          <Route path="/" element={<HomePage onTriggerVenom={triggerVenom} />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route path="/skills" element={<SkillsPage />} />
+          <Route path="/projects" element={<ProjectsPage />} />
+          <Route path="/timeline" element={<TimelinePage />} />
+          <Route path="/contact" element={<ContactPage />} />
+          <Route path="*" element={<NotFoundPage />} />
+        </Routes>
       </main>
 
       {/* Footer */}

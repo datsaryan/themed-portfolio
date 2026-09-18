@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useResumeData } from '../../data/useResumeData';
 import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
 import { ArrowDown, FileText, Send, Radio, Terminal, Zap, Headphones, Play, Pause } from 'lucide-react';
@@ -10,22 +11,21 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
   const { personal } = useResumeData();
   const [audioState, setAudioState] = useState(sound.getState());
+  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
     return () => unsub();
   }, []);
 
-  const scrollToMissions = () => {
+  const goToMissions = () => {
     sound.playThwip();
-    const el = document.querySelector('#projects');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    navigate('/projects');
   };
 
-  const scrollToContact = () => {
+  const goToContact = () => {
     sound.playClick();
-    const el = document.querySelector('#contact');
-    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    navigate('/contact');
   };
 
   return (
@@ -87,7 +87,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center gap-4 pt-2 w-full sm:w-auto">
             <button
-              onClick={scrollToMissions}
+              onClick={goToMissions}
               className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-widest transition-all shadow-comic-black border border-white/20 hover:translate-x-0.5 hover:-translate-y-0.5"
             >
               <span>EXPLORE MISSIONS</span>
@@ -106,7 +106,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
             </a>
 
             <button
-              onClick={scrollToContact}
+              onClick={goToContact}
               className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-transparent hover:bg-surface border border-borderDark text-subtext hover:text-headline font-mono text-xs uppercase font-medium transition-all"
             >
               <Send className="w-3.5 h-3.5" />
