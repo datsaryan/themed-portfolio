@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { Volume2, VolumeX, Zap, Menu, X, FileDown, Music, Play, Pause } from 'lucide-react';
 import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
 import { WebShooterToggle } from '../effects/WebShooterToggle';
@@ -13,8 +12,6 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [showVolumePopup, setShowVolumePopup] = useState(false);
-  const location = useLocation();
-  const navigate = useNavigate();
 
   useEffect(() => {
     const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
@@ -29,17 +26,20 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
   }, []);
 
   const navItems = [
-    { label: 'ORIGIN', to: '/about', badge: '01' },
-    { label: 'SUIT SPECS', to: '/skills', badge: '02' },
-    { label: 'MISSIONS', to: '/projects', badge: '03' },
-    { label: 'TIMELINE', to: '/timeline', badge: '04' },
-    { label: 'COMMS', to: '/contact', badge: '05' },
+    { label: 'ORIGIN', href: '#about', badge: '01' },
+    { label: 'SUIT SPECS', href: '#skills', badge: '02' },
+    { label: 'MISSIONS', href: '#projects', badge: '03' },
+    { label: 'TIMELINE', href: '#timeline', badge: '04' },
+    { label: 'COMMS', href: '#contact', badge: '05' },
   ];
 
-  const handleNavClick = (to: string) => {
+  const handleNavClick = (href: string) => {
     sound.playClick();
     setMobileMenuOpen(false);
-    navigate(to);
+    const element = document.querySelector(href);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth' });
+    }
   };
 
   return (
@@ -52,9 +52,13 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
         {/* Spider Mark Logo & Identity */}
-        <Link
-          to="/"
-          onClick={() => sound.playThwip()}
+        <a
+          href="#"
+          onClick={(e) => {
+            e.preventDefault();
+            sound.playThwip();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
           className="group flex items-center gap-3 focus:outline-none"
         >
           <div className="relative w-10 h-10 flex items-center justify-center bg-surface border border-spider group-hover:border-spider-bright transition-colors shadow-comic-black">
@@ -76,32 +80,23 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
               EARTH-1610 // SUIT HUD
             </span>
           </div>
-        </Link>
+        </a>
 
         {/* Desktop Navigation */}
         <nav className="hidden md:flex items-center gap-1 bg-surface/70 border border-borderDark/80 px-3 py-1.5 rounded-none">
-          {navItems.map((item) => {
-            const isActive = location.pathname === item.to;
-            return (
-              <button
-                key={item.label}
-                onClick={() => handleNavClick(item.to)}
-                className={`relative px-3 py-1.5 text-xs font-mono font-medium transition-colors group flex items-center gap-1.5 ${
-                  isActive ? 'text-headline' : 'text-subtext hover:text-headline'
-                }`}
-              >
-                <span className={`text-[10px] font-bold ${isActive ? 'text-spider' : 'text-spider/70 group-hover:text-spider'}`}>
-                  {item.badge}
-                </span>
-                <span>{item.label}</span>
-                <span
-                  className={`absolute bottom-0 left-3 right-3 h-[2px] bg-spider transition-transform origin-left ${
-                    isActive ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100'
-                  }`}
-                />
-              </button>
-            );
-          })}
+          {navItems.map((item) => (
+            <button
+              key={item.label}
+              onClick={() => handleNavClick(item.href)}
+              className="relative px-3 py-1.5 text-xs font-mono font-medium text-subtext hover:text-headline transition-colors group flex items-center gap-1.5"
+            >
+              <span className="text-[10px] text-spider/70 group-hover:text-spider font-bold">
+                {item.badge}
+              </span>
+              <span>{item.label}</span>
+              <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-spider scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
+            </button>
+          ))}
         </nav>
 
         {/* HUD Controls (Audio, Venom charge, Resume) */}
@@ -254,23 +249,16 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
               </button>
             </div>
 
-            {navItems.map((item) => {
-              const isActive = location.pathname === item.to;
-              return (
-                <button
-                  key={item.label}
-                  onClick={() => handleNavClick(item.to)}
-                  className={`flex items-center justify-between p-2.5 text-left font-display text-lg tracking-wider transition-all border ${
-                    isActive
-                      ? 'text-spider bg-surface border-borderDark'
-                      : 'text-headline hover:text-spider hover:bg-surface border-transparent hover:border-borderDark'
-                  }`}
-                >
-                  <span>{item.label}</span>
-                  <span className="font-mono text-xs text-spider">{item.badge}</span>
-                </button>
-              );
-            })}
+            {navItems.map((item) => (
+              <button
+                key={item.label}
+                onClick={() => handleNavClick(item.href)}
+                className="flex items-center justify-between p-2.5 text-left font-display text-lg tracking-wider text-headline hover:text-spider hover:bg-surface border border-transparent hover:border-borderDark transition-all"
+              >
+                <span>{item.label}</span>
+                <span className="font-mono text-xs text-spider">{item.badge}</span>
+              </button>
+            ))}
 
             <div className="pt-4 border-t border-borderDark flex items-center justify-between">
               <a
