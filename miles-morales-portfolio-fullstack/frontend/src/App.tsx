@@ -1,5 +1,4 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Routes, Route } from 'react-router-dom';
 import { HalftoneBackground } from './components/effects/HalftoneBackground';
 import { CustomCursor } from './components/effects/CustomCursor';
 import { HangingSpiderman } from './components/effects/HangingSpiderman';
@@ -11,7 +10,6 @@ import { SkillsSection } from './components/sections/SkillsSection';
 import { ProjectsSection } from './components/sections/ProjectsSection';
 import { TimelineSection } from './components/sections/TimelineSection';
 import { ContactSection } from './components/sections/ContactSection';
-import { ProjectDetailPage } from './pages/ProjectDetailPage';
 import { Footer } from './components/layout/Footer';
 import { VenomBlastOverlay } from './components/eastereggs/VenomBlastOverlay';
 import { sound } from './audio/soundEngine';
@@ -84,22 +82,12 @@ export function App() {
 
       {/* Main Experience Stream */}
       <main className="relative z-10">
-        <Routes>
-          <Route
-            path="/"
-            element={
-              <>
-                <HeroSection onTriggerVenom={triggerVenom} />
-                <AboutSection />
-                <SkillsSection />
-                <ProjectsSection />
-                <TimelineSection />
-                <ContactSection />
-              </>
-            }
-          />
-          <Route path="/projects/:id" element={<ProjectDetailPage />} />
-        </Routes>
+        <HeroSection onTriggerVenom={triggerVenom} />
+        <AboutSection />
+        <SkillsSection />
+        <ProjectsSection />
+        <TimelineSection />
+        <ContactSection />
       </main>
 
       {/* Footer */}

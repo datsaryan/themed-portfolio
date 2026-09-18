@@ -1,13 +1,16 @@
-import React from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from 'react';
 import { ProjectItem } from '../../data/resumeData';
 import { useResumeData } from '../../data/useResumeData';
+import { SpideyWebOverlay } from '../effects/SpideyWebOverlay';
+import { ProjectModal } from './ProjectModal';
 import { Target, ExternalLink, Github, Sparkles, Terminal } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
 
 export const ProjectsSection: React.FC = () => {
   const { missions } = useResumeData();
-  const navigate = useNavigate();
+  const [selectedProject, setSelectedProject] = useState<ProjectItem | null>(null);
+  const [webOrigin, setWebOrigin] = useState<{ x: number; y: number } | null>(null);
+  const [rippleId, setRippleId] = useState<string | null>(null);
 
   const handleCardClick = (e: React.MouseEvent<HTMLDivElement>, project: ProjectItem) => {
     // Prevent trigger if clicking directly on an anchor tag
@@ -16,10 +19,20 @@ export const ProjectsSection: React.FC = () => {
       return;
     }
 
+    // Ripple flash effect
+    setRippleId(project.id);
+    setTimeout(() => setRippleId(null), 420);
+
+    // Sound: click + thwip combo on card open
     sound.playClick();
     sound.playThwip();
 
-    navigate(`/projects/${project.id}`);
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = rect.left + rect.width / 2;
+    const y = rect.top + rect.height / 2;
+
+    setWebOrigin({ x, y });
+    setSelectedProject(project);
   };
 
   return (
@@ -59,21 +72,37 @@ export const ProjectsSection: React.FC = () => {
             <div
               key={mission.id}
               onClick={(e) => handleCardClick(e, mission)}
-              className="group relative bg-surface/90 border comic-border p-6 sm:p-7 cursor-pointer flex flex-col justify-between transition-all duration-200 overflow-hidden border-borderDark hover:border-spider hover:shadow-[0_0_24px_4px_rgba(230,36,41,0.35)]"
+              className={`group relative bg-surface/90 border comic-border p-6 sm:p-7 cursor-pointer flex flex-col justify-between transition-all duration-200 overflow-hidden ${
+                rippleId === mission.id
+                  ? 'border-spider shadow-[0_0_24px_4px_rgba(230,36,41,0.55)]'
+                  : 'border-borderDark'
+              }`}
               role="button"
               tabIndex={0}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.preventDefault();
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  setRippleId(mission.id);
+                  setTimeout(() => setRippleId(null), 420);
                   sound.playClick();
                   sound.playThwip();
-                  navigate(`/projects/${mission.id}`);
+                  setWebOrigin({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2 });
+                  setSelectedProject(mission);
                 }
               }}
               aria-label={`Open mission dossier for ${mission.title}`}
             >
               {/* Halftone corner texture on hover */}
               <div className="absolute top-0 right-0 w-32 h-32 bg-halftone-red opacity-0 group-hover:opacity-20 transition-opacity pointer-events-none" />
+
+              {/* Spider-red ripple flash on card click */}
+              <div
+                className={`absolute inset-0 pointer-events-none transition-opacity duration-300 ${
+                  rippleId === mission.id ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{ background: 'radial-gradient(circle at center, rgba(230,36,41,0.22) 0%, rgba(230,36,41,0.06) 55%, transparent 80%)' }}
+              />
 
               <div>
                 {/* Top Mission Tape */}
@@ -169,6 +198,27 @@ export const ProjectsSection: React.FC = () => {
           );
         })}
       </div>
+
+      {/* Dynamic Procedural Spidey Web Modal Triggered on Click */}
+      {selectedProject && (
+        <SpideyWebOverlay
+          originX={webOrigin?.x}
+          originY={webOrigin?.y}
+          accentColor={selectedProject.accentColor}
+          onClose={() => {
+            setSelectedProject(null);
+            setWebOrigin(null);
+          }}
+        >
+          <ProjectModal
+            project={selectedProject}
+            onClose={() => {
+              setSelectedProject(null);
+              setWebOrigin(null);
+            }}
+          />
+        </SpideyWebOverlay>
+      )}
     </section>
   );
 };
