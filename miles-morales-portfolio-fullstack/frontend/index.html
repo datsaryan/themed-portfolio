@@ -4,32 +4,31 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Aryan Singh | Full Stack Engineer // Earth-1610</title>
-    <meta name="description" content="Portfolio of Aryan Singh - Full Stack Engineer. Specializing in Java, Spring Boot, React, PostgreSQL, Distributed Systems, and Modern Frontend Architecture." />
+    <title>Aryan Singh | Full Stack Engineer — Hawkins Archives</title>
+    <meta name="description" content="Portfolio of Aryan Singh - Full Stack Engineer. Specializing in Java, Spring Boot, React, TypeScript, SQL databases, REST APIs, and Distributed Systems." />
     
     <!-- Open Graph / Meta -->
     <meta property="og:type" content="website" />
-    <meta property="og:title" content="Aryan Singh | Full Stack Engineer // Spider-Man: Miles Morales Portfolio" />
-    <meta property="og:description" content="Portfolio of Aryan Singh - Full Stack Engineer. Java, Spring Boot, React, Vite, Docker, PostgreSQL." />
+    <meta property="og:title" content="Aryan Singh | Full Stack Engineer — Hawkins Archives" />
+    <meta property="og:description" content="Full Stack Engineer portfolio of Aryan Singh. Java, Spring Boot, React, TypeScript, PostgreSQL, REST APIs, and JWT security." />
     
-    <!-- Google Fonts: Space Grotesk, Oswald, Bangers, JetBrains Mono -->
+    <!-- Google Fonts: Cinzel Decorative, Cinzel, IBM Plex Mono, Inter -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=JetBrains+Mono:wght@400;600;700&family=Oswald:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-      // Applies the saved palette before first paint so the light theme never
-      // flashes dark on load. Mirrors src/theme/themeEngine.ts.
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@600;700;800&family=IBM+Plex+Mono:ital,wght@0,400;0,600;0,700;1,400&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <script>
       (function () {
         try {
-          var saved = localStorage.getItem('spider_theme');
-          var light = saved === 'light' || (!saved && window.matchMedia('(prefers-color-scheme: light)').matches);
-          if (light) document.documentElement.classList.add('light');
-          document.documentElement.style.colorScheme = light ? 'light' : 'dark';
+          var savedWorld = localStorage.getItem('stranger_world');
+          if (savedWorld === 'upsidedown') {
+            document.documentElement.classList.add('upsidedown');
+          }
         } catch (e) {}
       })();
     </script>
   </head>
-  <body class="bg-void text-web font-sans antialiased selection:bg-spider selection:text-white overflow-x-hidden">
+  <body class="bg-hawkins-void text-hawkins-text font-sans antialiased selection:bg-hawkins-red selection:text-white overflow-x-hidden">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

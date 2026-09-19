@@ -1,293 +1,214 @@
 import React, { useState, useEffect } from 'react';
-import { Volume2, VolumeX, Zap, Menu, X, FileDown, Music, Play, Pause } from 'lucide-react';
-import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
-import { WebShooterToggle } from '../effects/WebShooterToggle';
+import { Menu, X, Shield, Terminal, Flame } from 'lucide-react';
+import { WorldMode } from '../../types/portfolio';
+import { strangerAudio } from '../../audio/soundEngine';
+import { AudioController } from './AudioController';
 
 interface NavbarProps {
-  onTriggerVenom: () => void;
+  world: WorldMode;
+  onToggleWorld: () => void;
+  onOpenAdmin: () => void;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
-  const [audioState, setAudioState] = useState(sound.getState());
+export const Navbar: React.FC<NavbarProps> = ({ world, onToggleWorld, onOpenAdmin }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [showVolumePopup, setShowVolumePopup] = useState(false);
+  const [activeSection, setActiveSection] = useState('hero');
 
   useEffect(() => {
-    const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 40);
+
+      const sections = ['hero', 'about', 'skills', 'projects', 'timeline', 'contact'];
+      for (const s of sections) {
+        const el = document.getElementById(s);
+        if (el) {
+          const rect = el.getBoundingClientRect();
+          if (rect.top <= 160 && rect.bottom >= 160) {
+            setActiveSection(s);
+            break;
+          }
+        }
+      }
     };
     window.addEventListener('scroll', handleScroll);
-    return () => {
-      unsub();
-      window.removeEventListener('scroll', handleScroll);
-    };
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navItems = [
-    { label: 'ORIGIN', href: '#about', badge: '01' },
-    { label: 'SUIT SPECS', href: '#skills', badge: '02' },
-    { label: 'MISSIONS', href: '#projects', badge: '03' },
-    { label: 'TIMELINE', href: '#timeline', badge: '04' },
-    { label: 'COMMS', href: '#contact', badge: '05' },
+  const navLinks = [
+    { href: '#hero', label: 'THE SIGNAL', id: 'hero' },
+    { href: '#about', label: 'THE DOSSIER', id: 'about' },
+    { href: '#skills', label: 'THE ARSENAL', id: 'skills' },
+    { href: '#projects', label: 'THE EXPERIMENTS', id: 'projects' },
+    { href: '#timeline', label: 'THE ARCHIVES', id: 'timeline' },
+    { href: '#contact', label: 'THE GATEWAY', id: 'contact' },
   ];
 
   const handleNavClick = (href: string) => {
-    sound.playClick();
+    strangerAudio.playClickSound();
     setMobileMenuOpen(false);
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    const target = document.querySelector(href);
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth' });
     }
   };
 
+  const handleWorldToggle = () => {
+    strangerAudio.playRiftSound();
+    onToggleWorld();
+  };
+
   return (
-    <header
-      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         isScrolled
-          ? 'bg-void/90 backdrop-blur-md border-b border-borderDark py-2 shadow-2xl'
+          ? 'bg-hawkins-void/90 backdrop-blur-md border-b border-hawkins-border py-2.5 shadow-case-file'
           : 'bg-transparent py-4'
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center justify-between">
-        {/* Spider Mark Logo & Identity */}
+        {/* Brand / Callout */}
         <a
-          href="#"
+          href="#hero"
           onClick={(e) => {
             e.preventDefault();
-            sound.playThwip();
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            handleNavClick('#hero');
           }}
-          className="group flex items-center gap-3 focus:outline-none"
+          className="flex items-center gap-2 group focus:outline-none"
         >
-          <div className="relative w-10 h-10 flex items-center justify-center bg-surface border border-spider group-hover:border-spider-bright transition-colors shadow-comic-black">
-            {/* Miles spray spider icon */}
-            <img
-              src="/assets/spiderman/miles_spider_icon.svg"
-              alt="Miles Morales Spider Mark"
-              className="w-7 h-7 group-hover:scale-110 transition-transform"
-            />
-            {/* Corner tick */}
-            <span className="absolute -top-1 -right-1 w-1.5 h-1.5 bg-spider animate-ping" />
-          </div>
-
+          <div className="w-2.5 h-2.5 rounded-full bg-hawkins-red animate-pulse" />
           <div className="flex flex-col">
-            <span className="font-display text-lg tracking-wider text-headline group-hover:text-spider transition-colors">
+            <span className="font-title text-sm tracking-wider text-hawkins-text group-hover:text-hawkins-red transition-colors">
               ARYAN SINGH
             </span>
-            <span className="font-mono text-[10px] text-subtext tracking-widest uppercase">
-              EARTH-1610 // SUIT HUD
+            <span className="text-[10px] font-mono tracking-widest text-hawkins-text-dim">
+              HAWKINS LAB // RF: 86.4 MHz
             </span>
           </div>
         </a>
 
-        {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center gap-1 bg-surface/70 border border-borderDark/80 px-3 py-1.5 rounded-none">
-          {navItems.map((item) => (
-            <button
-              key={item.label}
-              onClick={() => handleNavClick(item.href)}
-              className="relative px-3 py-1.5 text-xs font-mono font-medium text-subtext hover:text-headline transition-colors group flex items-center gap-1.5"
-            >
-              <span className="text-[10px] text-spider/70 group-hover:text-spider font-bold">
-                {item.badge}
-              </span>
-              <span>{item.label}</span>
-              <span className="absolute bottom-0 left-3 right-3 h-[2px] bg-spider scale-x-0 group-hover:scale-x-100 transition-transform origin-left" />
-            </button>
-          ))}
-        </nav>
-
-        {/* HUD Controls (Audio, Venom charge, Resume) */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Web Shooter: fires a web across the screen and swaps the palette */}
-          <WebShooterToggle />
-
-          {/* Venom Charge Meter / Easter Egg Trigger */}
-          <button
-            onClick={() => {
-              sound.playVenomBuzz();
-              onTriggerVenom();
-            }}
-            title="Bio-Electric Venom Charge (Press 'V' or Click)"
-            className="flex items-center gap-1.5 px-2.5 py-1.5 bg-surface/90 hover:bg-venom-dark border border-venom-purple/60 text-venom-purple hover:text-white transition-all text-xs font-mono font-semibold"
-          >
-            <Zap className="w-3.5 h-3.5 fill-venom-purple animate-pulse" />
-            <span className="hidden sm:inline">VENOM</span>
-            <span className="bg-venom-purple/20 px-1 py-0.2 text-[10px] text-headline">100%</span>
-          </button>
-
-          {/* Miles Morales BGM Song Controller */}
-          <div className="relative">
-            <button
-              onClick={() => sound.toggleSong()}
-              onMouseEnter={() => setShowVolumePopup(true)}
-              title={audioState.isPlaying ? `Pause ${BGM_TRACK.title}` : `Play ${BGM_TRACK.title} (${BGM_TRACK.artist})`}
-              className={`flex items-center gap-2 px-2.5 py-1.5 border transition-all text-xs font-mono ${
-                audioState.isPlaying
-                  ? 'bg-spider/20 border-spider text-headline shadow-spider-glow'
-                  : 'bg-surface border-borderDark text-subtext hover:text-headline'
+        {/* Desktop Navigation Links */}
+        <div className="hidden lg:flex items-center gap-6">
+          {navLinks.map((link) => (
+            <a
+              key={link.id}
+              href={link.href}
+              onClick={(e) => {
+                e.preventDefault();
+                handleNavClick(link.href);
+              }}
+              className={`text-xs font-mono tracking-widest transition-all ${
+                activeSection === link.id
+                  ? 'text-hawkins-red font-semibold border-b border-hawkins-red pb-0.5'
+                  : 'text-hawkins-text-muted hover:text-hawkins-text'
               }`}
             >
-              <Music className={`w-3.5 h-3.5 ${audioState.isPlaying ? 'text-spider animate-spin' : 'text-subtext'}`} style={{ animationDuration: '4s' }} />
-              
-              <div className="hidden lg:flex items-center gap-1.5 text-left">
-                <span className="font-bold text-graffiti-yellow">{BGM_TRACK.title.toUpperCase()}</span>
-                <span className="text-[10px] text-subtext/80 hidden xl:inline">// {BGM_TRACK.artist.toUpperCase()}</span>
-              </div>
+              {link.label}
+            </a>
+          ))}
+        </div>
 
-              {audioState.isPlaying ? (
-                <div className="flex items-center gap-1.5">
-                  <Pause className="w-3 h-3 text-spider fill-spider" />
-                  {/* Equalizer animation */}
-                  <div className="flex items-end gap-0.5 h-3">
-                    <span className="w-0.5 h-full bg-spider animate-pulse" />
-                    <span className="w-0.5 h-2 bg-spider animate-pulse" style={{ animationDelay: '150ms' }} />
-                    <span className="w-0.5 h-3 bg-spider animate-pulse" style={{ animationDelay: '300ms' }} />
-                    <span className="w-0.5 h-1.5 bg-spider animate-pulse" style={{ animationDelay: '450ms' }} />
-                  </div>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 text-[11px] text-subtext">
-                  <Play className="w-3 h-3 text-spider fill-spider" />
-                  <span className="hidden sm:inline">BGM</span>
-                </div>
-              )}
-            </button>
+        {/* Action Controls: Audio + World Mode + Terminal */}
+        <div className="hidden md:flex items-center gap-3">
+          <AudioController world={world} />
 
-            {/* Volume popup on hover */}
-            {showVolumePopup && (
-              <div
-                onMouseLeave={() => setShowVolumePopup(false)}
-                className="absolute right-0 top-full mt-2 bg-ink border border-spider p-3 shadow-2xl z-50 flex flex-col gap-2 w-48 animate-web-burst"
-              >
-                <div className="flex items-center justify-between text-[10px] font-mono text-subtext">
-                  <span className="text-spider font-bold">MILES MORALES BGM</span>
-                  <span>{Math.round(audioState.volume * 100)}%</span>
-                </div>
-                <div className="text-[11px] font-mono text-headline truncate">
-                  {BGM_TRACK.title} — {BGM_TRACK.artist}
-                </div>
-                {audioState.isPlaying && !audioState.usingFile && (
-                  <div className="text-[9px] font-mono text-subtext leading-tight">
-                    NO TRACK FILE FOUND — PLAYING PROCEDURAL SCORE
-                  </div>
-                )}
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => sound.toggleMute()}
-                    className="text-subtext hover:text-headline"
-                  >
-                    {audioState.isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-spider" />}
-                  </button>
-                  <input
-                    type="range"
-                    min="0"
-                    max="1"
-                    step="0.05"
-                    value={audioState.volume}
-                    onChange={(e) => sound.setVolume(parseFloat(e.target.value))}
-                    className="w-full accent-spider h-1.5 bg-concrete rounded-none cursor-pointer"
-                  />
-                </div>
-              </div>
-            )}
-          </div>
-
-          {/* Resume Quick Access */}
-          <a
-            href="/Aryan_FullStack_Resume.pdf"
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => sound.playClick()}
-            className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-wider transition-colors shadow-comic-black"
+          {/* Upside Down Switch */}
+          <button
+            onClick={handleWorldToggle}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-xs font-mono tracking-wider transition-all border ${
+              world === 'upsidedown'
+                ? 'bg-hawkins-red/20 border-hawkins-red text-hawkins-text hover:bg-hawkins-red/30'
+                : 'bg-hawkins-surface/80 border-hawkins-border text-hawkins-text-muted hover:border-hawkins-amber hover:text-hawkins-amber'
+            }`}
+            title={world === 'upsidedown' ? 'Return to Hawkins' : 'Cross into the Upside Down'}
           >
-            <FileDown className="w-3.5 h-3.5" />
-            <span>CV</span>
-          </a>
+            <Flame className={`w-3.5 h-3.5 ${world === 'upsidedown' ? 'text-hawkins-red animate-bounce' : 'text-hawkins-amber'}`} />
+            <span>{world === 'upsidedown' ? 'RETURN TO HAWKINS' : 'UPSIDE DOWN'}</span>
+          </button>
 
-          {/* Mobile Menu Button */}
+          {/* Admin Terminal Button */}
           <button
             onClick={() => {
-              sound.playClick();
+              strangerAudio.playClickSound();
+              onOpenAdmin();
+            }}
+            className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-xs font-mono tracking-wider border border-hawkins-border hover:border-hawkins-crt bg-hawkins-surface/60 text-hawkins-text-muted hover:text-hawkins-crt transition-all"
+            title="Classified Security Terminal (JWT Authentication)"
+          >
+            <Terminal className="w-3.5 h-3.5" />
+            <span className="hidden xl:inline">LAB TERMINAL</span>
+          </button>
+        </div>
+
+        {/* Mobile Menu Button */}
+        <div className="flex items-center gap-2 lg:hidden">
+          <button
+            onClick={handleWorldToggle}
+            className="p-1.5 rounded border border-hawkins-border text-hawkins-amber"
+            aria-label="Toggle World"
+          >
+            <Flame className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => {
+              strangerAudio.playClickSound();
               setMobileMenuOpen(!mobileMenuOpen);
             }}
-            className="md:hidden p-2 bg-surface border border-borderDark text-headline hover:bg-concrete"
+            className="p-1.5 text-hawkins-text hover:text-hawkins-red focus:outline-none"
             aria-label="Toggle Navigation Menu"
           >
-            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
+            {mobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown Web Menu */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden bg-void/98 border-b border-spider/50 px-6 py-6 animate-web-burst">
+        <div className="lg:hidden bg-hawkins-card/95 backdrop-blur-xl border-b border-hawkins-border px-6 py-6 mt-2 flex flex-col gap-4 animate-in slide-in-from-top duration-200">
           <div className="flex flex-col gap-3">
-            <div className="text-[10px] font-mono text-spider tracking-widest border-b border-borderDark pb-2 flex items-center justify-between">
-              <span>// TELEPORTATION NODES</span>
-              <span>EARTH-1610</span>
-            </div>
-
-            {/* Mobile BGM Song Row */}
-            <div className="bg-surface/90 border border-spider/50 p-3 my-1 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Music className="w-4 h-4 text-spider" />
-                <div>
-                  <div className="font-mono text-xs font-bold text-headline">{BGM_TRACK.title}</div>
-                  <div className="font-mono text-[10px] text-subtext">{BGM_TRACK.artist}</div>
-                </div>
-              </div>
-              <button
-                onClick={() => sound.toggleSong()}
-                className={`px-3 py-1 font-mono text-xs font-bold uppercase flex items-center gap-1 ${
-                  audioState.isPlaying ? 'bg-spider text-white' : 'bg-concrete text-headline'
+            {navLinks.map((link) => (
+              <a
+                key={link.id}
+                href={link.href}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick(link.href);
+                }}
+                className={`text-sm font-mono tracking-widest py-1 ${
+                  activeSection === link.id ? 'text-hawkins-red font-semibold' : 'text-hawkins-text-muted'
                 }`}
               >
-                {audioState.isPlaying ? <><Pause className="w-3 h-3" /> PAUSE</> : <><Play className="w-3 h-3" /> PLAY</>}
-              </button>
-            </div>
-
-            {navItems.map((item) => (
-              <button
-                key={item.label}
-                onClick={() => handleNavClick(item.href)}
-                className="flex items-center justify-between p-2.5 text-left font-display text-lg tracking-wider text-headline hover:text-spider hover:bg-surface border border-transparent hover:border-borderDark transition-all"
-              >
-                <span>{item.label}</span>
-                <span className="font-mono text-xs text-spider">{item.badge}</span>
-              </button>
-            ))}
-
-            <div className="pt-4 border-t border-borderDark flex items-center justify-between">
-              <a
-                href="/Aryan_FullStack_Resume.pdf"
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => sound.playClick()}
-                className="flex items-center gap-2 px-4 py-2 bg-spider text-white font-mono text-xs uppercase font-bold"
-              >
-                <FileDown className="w-4 h-4" />
-                Download CV
+                {link.label}
               </a>
+            ))}
+          </div>
 
-              <WebShooterToggle compact />
+          <div className="pt-4 border-t border-hawkins-border flex flex-col gap-3">
+            <AudioController world={world} />
+
+            <div className="flex items-center gap-2">
+              <button
+                onClick={handleWorldToggle}
+                className="flex-1 py-2 text-xs font-mono border border-hawkins-amber text-hawkins-amber rounded flex items-center justify-center gap-2"
+              >
+                <Flame className="w-3.5 h-3.5" />
+                {world === 'upsidedown' ? 'RETURN TO HAWKINS' : 'CROSS TO UPSIDE DOWN'}
+              </button>
 
               <button
                 onClick={() => {
-                  sound.playVenomBuzz();
-                  onTriggerVenom();
+                  setMobileMenuOpen(false);
+                  onOpenAdmin();
                 }}
-                className="flex items-center gap-1 px-3 py-2 bg-venom-purple text-white font-mono text-xs font-bold"
+                className="py-2 px-3 text-xs font-mono border border-hawkins-border text-hawkins-crt rounded flex items-center justify-center gap-1.5"
               >
-                <Zap className="w-4 h-4" />
-                Venom Zap
+                <Terminal className="w-3.5 h-3.5" />
+                TERMINAL
               </button>
             </div>
           </div>
         </div>
       )}
-    </header>
+    </nav>
   );
 };

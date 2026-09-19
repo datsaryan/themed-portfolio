@@ -1,269 +1,226 @@
 import React, { useState } from 'react';
-import { useResumeData } from '../../data/useResumeData';
-import { Mail, Phone, Linkedin, Github, Send, Copy, Check, Terminal, ExternalLink, FileDown } from 'lucide-react';
-import { sound } from '../../audio/soundEngine';
+import { Radio, Send, CheckCircle2, AlertTriangle, Mail, Github, Linkedin, Code2, Phone } from 'lucide-react';
+import { ProfileData, WorldMode } from '../../types/portfolio';
 import { submitContactMessage } from '../../services/api';
+import { strangerAudio } from '../../audio/soundEngine';
 
-export const ContactSection: React.FC = () => {
-  const { personal } = useResumeData();
-  const [copied, setCopied] = useState(false);
-  const [formSent, setFormSent] = useState(false);
+interface ContactSectionProps {
+  personal: ProfileData;
+  world: WorldMode;
+}
+
+export const ContactSection: React.FC<ContactSectionProps> = ({ personal, world }) => {
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
-  // 'api': backend confirmed the email was queued/sent — no need to bother
-  // the visitor's own mail client. 'mailto': backend wasn't reachable/
-  // configured, so we fall back to opening their mail app instead.
-  const [deliveryMode, setDeliveryMode] = useState<'api' | 'mailto'>('api');
-
-  const copyEmail = () => {
-    sound.playThwip();
-    navigator.clipboard.writeText(personal.email);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
+  const [status, setStatus] = useState<'idle' | 'transmitting' | 'success' | 'error'>('idle');
+  const [statusMessage, setStatusMessage] = useState<string>('');
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    sound.playThwip();
+    if (!formData.name || !formData.email || !formData.message) return;
 
-    // Try the backend first — when it's configured and reachable, it emails
-    // the message straight to Aryan's inbox itself (see backend EmailService),
-    // no visitor mail client required.
-    const delivered = await submitContactMessage(formData);
+    strangerAudio.playClickSound();
+    setStatus('transmitting');
+    setStatusMessage('Transmitting message through Hawkins RF relay...');
 
-    if (delivered) {
-      setDeliveryMode('api');
-    } else {
-      // Backend not deployed / not configured / request failed — fall back
-      // to opening the visitor's own mail client so the message still gets
-      // sent somewhere, even if it now depends on them hitting send.
-      setDeliveryMode('mailto');
-      const subject = encodeURIComponent(`Portfolio Inquiry from ${formData.name}`);
-      const body = encodeURIComponent(`${formData.message}\n\nFrom: ${formData.name} (${formData.email})`);
-      window.open(`mailto:${personal.email}?subject=${subject}&body=${body}`, '_blank');
-    }
-
-    setFormSent(true);
-    setTimeout(() => {
-      setFormSent(false);
+    const res = await submitContactMessage(formData);
+    if (res.success) {
+      setStatus('success');
+      setStatusMessage(res.message);
       setFormData({ name: '', email: '', message: '' });
-    }, 4000);
+    } else {
+      setStatus('error');
+      setStatusMessage(res.message);
+    }
   };
 
   return (
-    <section id="contact" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-      {/* Section Header */}
-      <div className="mb-12">
-        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
-          <Send className="w-4 h-4" />
-          <span>COMMS // 05</span>
-          <span className="text-borderDark">————</span>
-          <span className="text-subtext">DIRECT TRANSMISSION LINK</span>
-        </div>
-        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
-          <span>SEND A</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider to-venom-purple">
-            WEB SIGNAL
-          </span>
-        </h2>
-        <p className="text-sm sm:text-base text-subtext mt-2 font-mono">
-          // DISPATCH SECURE COMMUNIQUE DIRECTLY TO ARYAN SINGH'S TERMINAL
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        {/* Left Column: Direct Transmission Channels */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Email Direct Access Box */}
-          <div className="bg-surface/90 border border-borderDark comic-border p-6 relative">
-            <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-4">
-              <span className="font-mono text-xs text-spider font-bold uppercase tracking-wider flex items-center gap-2">
-                <Mail className="w-4 h-4" />
-                PRIMARY COMMS FREQUENCY
-              </span>
-              <button
-                onClick={copyEmail}
-                className="inline-flex items-center gap-1 text-[11px] font-mono text-subtext hover:text-headline bg-ink px-2 py-1 border border-borderDark transition-colors"
-                title="Copy Email Address"
-              >
-                {copied ? (
-                  <>
-                    <Check className="w-3.5 h-3.5 text-green-400" />
-                    <span className="text-green-400">COPIED</span>
-                  </>
-                ) : (
-                  <>
-                    <Copy className="w-3.5 h-3.5" />
-                    <span>COPY</span>
-                  </>
-                )}
-              </button>
+    <section id="contact" className="py-20 px-4 sm:px-6 relative">
+      <div className="max-w-5xl mx-auto">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-4 border-b border-hawkins-border">
+          <div>
+            <div className="text-xs font-mono tracking-widest text-hawkins-red uppercase font-semibold mb-1 flex items-center gap-2">
+              <Radio className="w-4 h-4 animate-pulse" />
+              SECTION 05 // OPEN THE GATE
             </div>
-
-            <a
-              href={`mailto:${personal.email}`}
-              onClick={() => sound.playClick()}
-              className="text-lg sm:text-xl font-mono text-headline hover:text-spider transition-colors font-bold break-all block"
-            >
-              {personal.email}
-            </a>
-
-            <div className="mt-4 pt-3 border-t border-borderDark/60 flex items-center gap-2 text-xs font-mono text-subtext">
-              <Phone className="w-3.5 h-3.5 text-spider" />
-              <span>{personal.phone}</span>
-            </div>
+            <h2 className="text-3xl sm:text-4xl font-title text-hawkins-text tracking-wide">
+              TRANSMIT A MESSAGE
+            </h2>
           </div>
-
-          {/* Social / Professional Links Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <a
-              href={personal.links.linkedin}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => sound.playClick()}
-              className="bg-ink hover:bg-surface border border-borderDark hover:border-spider p-4 transition-all comic-border group flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <Linkedin className="w-5 h-5 text-spider group-hover:scale-110 transition-transform" />
-                <div>
-                  <div className="font-mono text-xs font-bold text-headline uppercase">LinkedIn</div>
-                  <div className="font-mono text-[10px] text-subtext">/aryan-singh</div>
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-headline transition-colors" />
-            </a>
-
-            <a
-              href={personal.links.github}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => sound.playClick()}
-              className="bg-ink hover:bg-surface border border-borderDark hover:border-spider p-4 transition-all comic-border group flex items-center justify-between"
-            >
-              <div className="flex items-center gap-3">
-                <Github className="w-5 h-5 text-spider group-hover:scale-110 transition-transform" />
-                <div>
-                  <div className="font-mono text-xs font-bold text-headline uppercase">GitHub</div>
-                  <div className="font-mono text-[10px] text-subtext">/datsaryan</div>
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-headline transition-colors" />
-            </a>
-
-            <a
-              href={personal.links.leetcode}
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => sound.playClick()}
-              className="bg-ink hover:bg-surface border border-borderDark hover:border-spider p-4 transition-all comic-border group flex items-center justify-between sm:col-span-2"
-            >
-              <div className="flex items-center gap-3">
-                <Terminal className="w-5 h-5 text-graffiti-yellow group-hover:scale-110 transition-transform" />
-                <div>
-                  <div className="font-mono text-xs font-bold text-headline uppercase">LeetCode Engineering Profile</div>
-                  <div className="font-mono text-[10px] text-subtext">Active algorithmic practice & challenges</div>
-                </div>
-              </div>
-              <ExternalLink className="w-4 h-4 text-subtext group-hover:text-headline transition-colors" />
-            </a>
-          </div>
-
-          {/* Download Resume Banner */}
-          <div className="bg-surface/60 border border-spider/60 p-4 flex items-center justify-between">
-            <div className="font-mono text-xs text-paper">
-              <span className="font-bold text-spider uppercase">OFFICIAL DOSSIER:</span> Full Resume PDF
-            </div>
-            <a
-              href="/Aryan_FullStack_Resume.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={() => sound.playClick()}
-              className="flex items-center gap-1.5 px-3 py-1.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-wider transition-colors shadow-comic-black"
-            >
-              <FileDown className="w-3.5 h-3.5" />
-              <span>DOWNLOAD</span>
-            </a>
+          <div className="mt-3 sm:mt-0 text-xs font-mono text-hawkins-crt">
+            FREQUENCY: 86.4 MHz // ENCRYPTED
           </div>
         </div>
 
-        {/* Right Column: Web Message Terminal Form */}
-        <div className="lg:col-span-7 bg-surface/90 border border-borderDark comic-border p-6 sm:p-8 relative">
-          <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-6">
-            <span className="font-mono text-xs text-graffiti-yellow font-bold uppercase tracking-wider flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-spider" />
-              ENCRYPTED COMMUNIQUE DISPATCH
-            </span>
-            <span className="text-[10px] font-mono text-subtext">
-              PORT: 443 // SECURE
-            </span>
-          </div>
+        <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+          {/* Transmission Console Form */}
+          <div className="md:col-span-3 case-file-border rounded-lg p-6 sm:p-8 bg-hawkins-card/90">
+            <h3 className="text-lg font-title text-hawkins-text mb-2">
+              SEND DIRECT TELECOMMUNICATION
+            </h3>
+            <p className="text-xs text-hawkins-text-muted font-sans mb-6">
+              Transmissions are routed through the Spring Boot API, stored securely in SQL archives, and dispatched immediately.
+            </p>
 
-          {formSent ? (
-            <div className="p-8 text-center bg-ink border border-spider animate-web-burst">
-              <div className="w-12 h-12 mx-auto bg-spider text-white flex items-center justify-center font-comic text-2xl shadow-comic-black rotate-6 mb-4">
-                THWIP!
-              </div>
-              <h3 className="font-display text-2xl text-headline uppercase tracking-wide">
-                SIGNAL TRANSMITTED!
-              </h3>
-              <p className="text-xs sm:text-sm font-mono text-subtext mt-2 max-w-md mx-auto">
-                {deliveryMode === 'api'
-                  ? `Delivered straight to ${personal.email}. Aryan will get back to you soon.`
-                  : `Opening your email client to send directly to ${personal.email}.`}
-              </p>
-            </div>
-          ) : (
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block font-mono text-xs text-subtext uppercase tracking-wider mb-1.5">
-                  OPERATIVE NAME / CALLSIGN
+                <label className="block text-xs font-mono text-hawkins-amber uppercase tracking-wider mb-1.5">
+                  OPERATIVE NAME / RECRUITER
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  placeholder="e.g. Peter Parker / Hiring Manager"
-                  className="w-full bg-ink border border-borderDark focus:border-spider text-headline font-mono text-sm px-4 py-2.5 outline-none transition-colors"
+                  placeholder="e.g. Dr. Martin Brenner"
+                  className="w-full px-3.5 py-2.5 rounded bg-hawkins-surface border border-hawkins-border text-hawkins-text placeholder-hawkins-text-dim text-sm font-mono focus:outline-none focus:border-hawkins-red transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-xs text-subtext uppercase tracking-wider mb-1.5">
-                  RETURN FREQUENCY / EMAIL
+                <label className="block text-xs font-mono text-hawkins-amber uppercase tracking-wider mb-1.5">
+                  COMMUNICATION FREQUENCY (EMAIL)
                 </label>
                 <input
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  placeholder="name@company.com"
-                  className="w-full bg-ink border border-borderDark focus:border-spider text-headline font-mono text-sm px-4 py-2.5 outline-none transition-colors"
+                  placeholder="e.g. brenner@hawkinslab.gov"
+                  className="w-full px-3.5 py-2.5 rounded bg-hawkins-surface border border-hawkins-border text-hawkins-text placeholder-hawkins-text-dim text-sm font-mono focus:outline-none focus:border-hawkins-red transition-colors"
                 />
               </div>
 
               <div>
-                <label className="block font-mono text-xs text-subtext uppercase tracking-wider mb-1.5">
-                  TRANSMISSION PACKET / MESSAGE
+                <label className="block text-xs font-mono text-hawkins-amber uppercase tracking-wider mb-1.5">
+                  TRANSMISSION DISPATCH
                 </label>
                 <textarea
-                  required
                   rows={4}
+                  required
                   value={formData.message}
                   onChange={(e) => setFormData({ ...formData, message: e.target.value })}
-                  placeholder="Detail your mission objective, job opportunity, or collaboration inquiry..."
-                  className="w-full bg-ink border border-borderDark focus:border-spider text-headline font-mono text-sm px-4 py-2.5 outline-none transition-colors resize-none"
+                  placeholder="State project details, engineering roles, or collaboration opportunities..."
+                  className="w-full px-3.5 py-2.5 rounded bg-hawkins-surface border border-hawkins-border text-hawkins-text placeholder-hawkins-text-dim text-sm font-mono focus:outline-none focus:border-hawkins-red transition-colors resize-none"
                 />
               </div>
 
+              {/* Status Display */}
+              {status !== 'idle' && (
+                <div
+                  className={`p-3 rounded text-xs font-mono flex items-center gap-2 ${
+                    status === 'transmitting'
+                      ? 'bg-hawkins-surface border border-hawkins-amber text-hawkins-amber'
+                      : status === 'success'
+                      ? 'bg-hawkins-surface border border-hawkins-crt text-hawkins-crt'
+                      : 'bg-hawkins-surface border border-hawkins-red text-hawkins-red'
+                  }`}
+                >
+                  {status === 'success' ? (
+                    <CheckCircle2 className="w-4 h-4 shrink-0" />
+                  ) : status === 'error' ? (
+                    <AlertTriangle className="w-4 h-4 shrink-0" />
+                  ) : (
+                    <Radio className="w-4 h-4 shrink-0 animate-spin" />
+                  )}
+                  <span>{statusMessage}</span>
+                </div>
+              )}
+
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-widest transition-all shadow-comic-black border border-white/20 mt-4"
+                disabled={status === 'transmitting'}
+                className="w-full py-3 rounded bg-hawkins-red hover:bg-red-700 disabled:opacity-50 text-white font-mono text-xs sm:text-sm font-semibold tracking-wider transition-all shadow-hawkins-glow flex items-center justify-center gap-2"
               >
                 <Send className="w-4 h-4" />
-                <span>SLING WEB MESSAGE // TRANSMIT</span>
+                {status === 'transmitting' ? 'BROADCASTING...' : 'BROADCAST TRANSMISSION'}
               </button>
             </form>
-          )}
+          </div>
+
+          {/* Direct Channels & Terminal Info */}
+          <div className="md:col-span-2 flex flex-col justify-between space-y-6">
+            <div className="case-file-border rounded-lg p-6 bg-hawkins-card/80">
+              <span className="text-xs font-mono text-hawkins-amber uppercase tracking-wider block mb-4">
+                DIRECT SECURE CHANNELS:
+              </span>
+
+              <div className="space-y-4">
+                <a
+                  href={`mailto:${personal.email}`}
+                  className="flex items-center gap-3 text-xs font-mono text-hawkins-text-muted hover:text-hawkins-red transition-colors group"
+                >
+                  <div className="p-2 rounded bg-hawkins-surface border border-hawkins-border group-hover:border-hawkins-red">
+                    <Mail className="w-4 h-4 text-hawkins-red" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-hawkins-text-dim block">ELECTRONIC MAIL</span>
+                    <span className="text-hawkins-text font-semibold">{personal.email}</span>
+                  </div>
+                </a>
+
+                <div className="flex items-center gap-3 text-xs font-mono text-hawkins-text-muted">
+                  <div className="p-2 rounded bg-hawkins-surface border border-hawkins-border">
+                    <Phone className="w-4 h-4 text-hawkins-crt" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-hawkins-text-dim block">VOICE TELECOMMUNICATION</span>
+                    <span className="text-hawkins-text font-semibold">{personal.phone}</span>
+                  </div>
+                </div>
+
+                <a
+                  href={personal.linkedinUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-xs font-mono text-hawkins-text-muted hover:text-hawkins-amber transition-colors group"
+                >
+                  <div className="p-2 rounded bg-hawkins-surface border border-hawkins-border group-hover:border-hawkins-amber">
+                    <Linkedin className="w-4 h-4 text-hawkins-amber" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-hawkins-text-dim block">PROFESSIONAL NETWORK</span>
+                    <span className="text-hawkins-text font-semibold">Aryan Singh // LinkedIn</span>
+                  </div>
+                </a>
+
+                <a
+                  href={personal.githubUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-xs font-mono text-hawkins-text-muted hover:text-hawkins-text transition-colors group"
+                >
+                  <div className="p-2 rounded bg-hawkins-surface border border-hawkins-border group-hover:border-hawkins-text">
+                    <Github className="w-4 h-4 text-hawkins-text" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-hawkins-text-dim block">CODE REPOSITORIES</span>
+                    <span className="text-hawkins-text font-semibold">@datsaryan</span>
+                  </div>
+                </a>
+
+                <a
+                  href={personal.leetcodeUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 text-xs font-mono text-hawkins-text-muted hover:text-hawkins-crt transition-colors group"
+                >
+                  <div className="p-2 rounded bg-hawkins-surface border border-hawkins-border group-hover:border-hawkins-crt">
+                    <Code2 className="w-4 h-4 text-hawkins-crt" />
+                  </div>
+                  <div>
+                    <span className="text-[10px] text-hawkins-text-dim block">ALGORITHMIC PROBLEMS</span>
+                    <span className="text-hawkins-text font-semibold">leetcode.com/u/datsaryan</span>
+                  </div>
+                </a>
+              </div>
+            </div>
+
+            {/* Security Notice */}
+            <div className="p-4 rounded border border-hawkins-border bg-hawkins-surface/40 text-[11px] font-mono text-hawkins-text-dim leading-relaxed">
+              &gt; NOTICE: All communications submitted through this portal are archived directly into the SQL persistent layer. No credentials or private tokens are exposed.
+            </div>
+          </div>
         </div>
       </div>
     </section>

@@ -1,57 +1,22 @@
-export interface ProjectItem {
-  id: string;
-  missionNumber: string;
-  title: string;
-  subtitle: string;
-  dates: string;
-  sector: string;
-  techStack: string[];
-  summary: string;
-  bullets: string[];
-  githubUrl?: string;
-  liveUrl?: string;
-  metrics?: string[];
-  accentColor?: string;
-}
-
-export interface SkillCategory {
-  category: string;
-  suitModule: string;
-  icon: string;
-  skills: string[];
-  description: string;
-}
-
-export interface CertificationItem {
-  title: string;
-  issuer: string;
-  dates?: string;
-  link?: string;
-  type: 'internship' | 'workshop' | 'certification' | 'practice';
-  description: string;
-}
+import { ProfileData, ProjectItem, SkillCategory, Certification, EducationItem, ExperienceItem } from '../types/portfolio';
 
 export const RESUME_DATA = {
   personal: {
+    id: 1,
     name: "Aryan Singh",
-    heroCodename: "SPIDER // EARTH-1610",
+    heroCodename: "HAWKINS LAB OPERATIVE // 011-STACK",
     title: "Full Stack Engineer",
-    tagline: "YOUR FRIENDLY NEIGHBORHOOD FULL STACK ENGINEER",
+    tagline: "BUILDING SYSTEMS FROM THE RIGHT SIDE OF THE STACK",
     phone: "+91 8602879043",
     email: "aryansobdh@gmail.com",
-    location: "Raigarh, India",
+    location: "Raigarh, Chhattisgarh, India",
     status: "ACTIVE OPERATIVE // OPEN TO OPPORTUNITIES",
-    links: {
-      github: "https://github.com/datsaryan",
-      linkedin: "https://www.linkedin.com/in/aryan-singh-19b0a2293/",
-      leetcode: "https://leetcode.com/u/datsaryan/",
-      resumePdf: "/Aryan_FullStack_Resume.pdf",
-    },
+    githubUrl: "https://github.com/datsaryan",
+    linkedinUrl: "https://www.linkedin.com/in/aryan-singh-19b0a2293/",
+    leetcodeUrl: "https://leetcode.com/u/datsaryan/",
+    resumePdfPath: "/Aryan_FullStack_Resume.pdf",
     summary:
       "Full-stack engineering student with hands-on experience building end-to-end web applications spanning REST APIs, relational databases, and modern JavaScript frontends. Comfortable owning a feature from schema design through UI, with practical experience in authentication, authorization, and multi-tenant systems. Strong Data Structures & Algorithms foundation from active LeetCode practice.",
-  },
-
-  education: {
     institution: "OP Jindal University, Raigarh",
     degree: "B.Tech, Computer Science Engineering",
     cgpa: "7.8 / 10",
@@ -68,12 +33,69 @@ export const RESUME_DATA = {
       "Operating Systems",
       "Programming Language Principles",
     ],
-  },
+  } as ProfileData,
 
-  missions: [
+  education: [
+    {
+      id: 1,
+      institution: "OP Jindal University, Raigarh",
+      degree: "B.Tech, Computer Science Engineering",
+      cgpa: "7.8 / 10",
+      timeline: "Expected June 2027",
+      relevantCoursework: [
+        "Data Structures",
+        "Algorithms",
+        "Computer Networks",
+        "NLP",
+        "Computer Vision",
+        "Artificial Intelligence",
+        "Machine Learning",
+        "Deep Learning",
+        "Database Management",
+        "Operating Systems",
+        "Programming Language Principles",
+      ],
+    }
+  ] as EducationItem[],
+
+  experience: [
+    {
+      id: 1,
+      role: "Web Development Intern",
+      organization: "InAmigos Foundation",
+      dates: "Apr 2026 – May 2026",
+      location: "Remote",
+      type: "internship",
+      description: "Built a responsive single-page portal with donation gateway integration and volunteer onboarding.",
+      bullets: [
+        "Engineered 10 modular sections using CSS Flexbox and Grid across 3 distinct viewport breakpoints.",
+        "Integrated live Razorpay payment processing and volunteer enrollment workflows.",
+        "Achieved 90+ Google Lighthouse performance score and sub-2-second first contentful paint.",
+      ],
+      techStack: ["HTML5", "CSS3", "JavaScript", "Razorpay"],
+      displayOrder: 1,
+    },
+    {
+      id: 2,
+      role: "AI & ML Workshop Participant",
+      organization: "Industry Engineering Consortium",
+      dates: "Jan 2026 – Feb 2026",
+      location: "Raigarh, India",
+      type: "workshop",
+      description: "Hands-on workshops covering practical ML implementation, emerging technologies, and modern developer tooling.",
+      bullets: [
+        "Implemented core computer vision and classification models with OpenCV and Python.",
+        "Explored modern developer tooling, collaborative version control, and system debugging.",
+      ],
+      techStack: ["Python", "OpenCV", "Machine Learning", "Git"],
+      displayOrder: 2,
+    }
+  ] as ExperienceItem[],
+
+  projects: [
     {
       id: "hiretrack",
-      missionNumber: "MISSION 01",
+      missionNumber: "CASE FILE 001",
       title: "HireTrack",
       subtitle: "Full-Stack Applicant Tracking System (ATS)",
       dates: "May 2026 – July 2026",
@@ -100,12 +122,14 @@ export const RESUME_DATA = {
         "Used Claude AI (Claude Code) as an AI pair-programming assistant for architecture planning, debugging, and implementing backend features, accelerating feature delivery against a structured project spec.",
       ],
       githubUrl: "https://github.com/datsaryan/hiretrack",
+      liveUrl: null,
       metrics: ["25+ REST Endpoints", "80%+ Code Coverage", "40% Pipeline Efficiency", "50+ Tests"],
       accentColor: "#e62429",
+      displayOrder: 1,
     },
     {
       id: "face-attendance",
-      missionNumber: "MISSION 02",
+      missionNumber: "CASE FILE 002",
       title: "Face-Based Attendance System",
       subtitle: "Biometric Computer Vision Pipeline",
       dates: "Dec 2025 – Feb 2026",
@@ -126,41 +150,48 @@ export const RESUME_DATA = {
         "Built modular pipelines for dataset collection, preprocessing, face detection, and live recognition, boosting identification accuracy by 15% and cutting processing time by 25%.",
         "Built a Tkinter GUI for non-technical staff to manage 120+ student attendance records, using CSV + Pandas for storage and retrieval in under 2 seconds, with recognition latency under 1 second per frame; validated modules with Pytest.",
       ],
-      githubUrl: "https://github.com/datsaryan/Face-Recognition-Based-Attendance-Monitoring-System",
+      githubUrl:
+        "https://github.com/datsaryan/Face-Recognition-Based-Attendance-Monitoring-System",
+      liveUrl: null,
       metrics: ["300+ Students Tracked", "<1s Frame Latency", "+15% Accuracy Boost", "<2s Data Retrieval"],
       accentColor: "#a855f7",
+      displayOrder: 2,
     },
     {
       id: "inamigos-ngo",
-      missionNumber: "MISSION 03",
+      missionNumber: "CASE FILE 003",
       title: "InAmigos Foundation Website",
       subtitle: "NGO Awareness & Donation Platform",
       dates: "Apr 2026 – May 2026",
       sector: "CIVIL SOCIETY & PUBLIC WEB",
-      techStack: ["HTML5", "CSS3", "Vanilla JavaScript"],
+      techStack: ["HTML5", "CSS3", "Vanilla JavaScript", "Razorpay"],
       summary:
         "High-performance mobile-responsive web platform for a real NGO with live Razorpay payment processing.",
       bullets: [
         "Built a fully static, mobile-responsive single-page site for a real NGO across 10 sections using Flexbox/Grid across 3 breakpoints, achieving a 90+ Lighthouse performance score and sub-2-second page load time, with a live Razorpay donation gateway and a volunteer sign-up form.",
       ],
       githubUrl: "https://github.com/datsaryan/InAmigos-Projects",
+      liveUrl: null,
       metrics: ["90+ Lighthouse Score", "<2s Page Load Time", "10 Custom Sections", "Live Razorpay Integration"],
       accentColor: "#ffd600",
+      displayOrder: 3,
     },
     {
       id: "portfolio-fullstack",
-      missionNumber: "MISSION 04",
+      missionNumber: "CASE FILE 004",
       title: "Personal Portfolio Full-Stack",
-      subtitle: "Decoupled Web Architecture",
-      dates: "Aug 2026 – Sep 2026",
+      subtitle: "Decoupled Web Architecture & Stranger Things Theme",
+      dates: "Aug 2026 - Sep 2026",
       sector: "SYSTEM ARCHITECTURE & DEPLOYMENT",
       techStack: [
         "React",
         "Vite",
+        "TypeScript",
         "Java",
         "Spring Boot",
         "PostgreSQL",
         "Flyway",
+        "JWT",
         "Docker",
         "Vercel",
         "Render",
@@ -169,63 +200,79 @@ export const RESUME_DATA = {
       summary:
         "Full-stack decoupled portfolio served by a Spring Boot REST API, versioned PostgreSQL schema, and multi-cloud deployment.",
       bullets: [
-        "Rebuilt a static HTML portfolio as a full-stack application, replacing hardcoded content with a React (Vite) frontend served by a Spring Boot REST API across 4 endpoints (/api/projects, /api/skills, /api/certifications, /api/contact).",
-        "Modeled and versioned the PostgreSQL schema with Flyway migrations, decoupling content updates (projects, skills, certifications) from frontend code changes.",
+        "Rebuilt static HTML portfolio as a full-stack application, replacing hardcoded content with a React (Vite) frontend served by a Spring Boot REST API across 8+ endpoints (/api/profile, /api/skills, /api/projects, /api/certifications, /api/education, /api/experience, /api/contact, /api/auth).",
+        "Modeled and versioned the PostgreSQL schema with Flyway migrations, decoupling content updates from frontend code changes.",
         "Containerized PostgreSQL and the backend with Docker Compose, cutting local environment setup to 2 commands, and deployed the stack across 3 free-tier platforms (Neon, Render, Vercel) with a documented CORS and deployment guide.",
       ],
+      githubUrl: "https://github.com/datsaryan/themed-portfolio",
       liveUrl: "https://portfolio-eight-woad-18.vercel.app",
-      metrics: ["4 Spring REST Endpoints", "Dockerized Compose Stack", "3-Cloud Architecture", "Zero-Downtime Flyway"],
+      metrics: ["8+ Spring REST Endpoints", "Dockerized Compose Stack", "JWT Authentication", "Zero-Downtime Flyway"],
       accentColor: "#00f0ff",
+      displayOrder: 4,
     },
   ] as ProjectItem[],
 
-  skillCategories: [
+  skills: [
     {
+      id: 1,
       category: "Languages",
-      suitModule: "CORE SYNAPSE LOGIC",
+      suitModule: "CORE SYSTEM LOGIC",
       icon: "Terminal",
-      skills: ["Java", "Python", "C", "C++", "SQL", "JavaScript"],
       description: "Low-level system fundamentals and high-level algorithmic execution.",
+      skills: ["Java", "Python", "C", "C++", "SQL", "JavaScript"],
+      displayOrder: 1,
     },
     {
+      id: 2,
       category: "Backend & APIs",
       suitModule: "NEURAL BACKBONE / APIs",
       icon: "Server",
-      skills: ["Spring Boot", "REST APIs", "JWT Auth", "RBAC", "Flyway"],
       description: "Scalable micro-architectures, enterprise security, and transactional integrity.",
+      skills: ["Spring Boot", "REST APIs", "JWT Auth", "RBAC", "Flyway"],
+      displayOrder: 2,
     },
     {
+      id: 3,
       category: "Frontend",
-      suitModule: "OPTICAL HUD & UI",
+      suitModule: "OPTICAL INTERFACE & UI",
       icon: "Layout",
-      skills: ["React", "Vite", "HTML5", "CSS3", "JavaScript"],
       description: "Kinetic interfaces, state management, and high-frequency rendering.",
+      skills: ["React", "Vite", "TypeScript", "HTML5", "CSS3", "JavaScript"],
+      displayOrder: 3,
     },
     {
+      id: 4,
       category: "Databases",
       suitModule: "PERSISTENT MEMORY CORES",
       icon: "Database",
-      skills: ["PostgreSQL", "SQL", "MySQL"],
       description: "Relational modeling, migration pipelines, and optimized query plans.",
+      skills: ["PostgreSQL", "SQL", "MySQL"],
+      displayOrder: 4,
     },
     {
+      id: 5,
       category: "Tools & DevOps",
-      suitModule: "TACTICAL TOOLING & DEPLOY",
+      suitModule: "LAB TOOLING & DEPLOY",
       icon: "Wrench",
-      skills: ["Git", "GitHub", "Docker", "Maven", "VS Code"],
       description: "Containerized workflows, version control, and automated build pipelines.",
+      skills: ["Git", "GitHub", "Docker", "Maven", "VS Code"],
+      displayOrder: 5,
     },
     {
+      id: 6,
       category: "Testing & Quality",
-      suitModule: "INTEGRITY SHIELDS",
+      suitModule: "SYSTEM INTEGRITY SHIELDS",
       icon: "ShieldCheck",
-      skills: ["JUnit", "Mockito", "Pytest"],
       description: "Test-driven verification, behavioral mocking, and regression prevention.",
+      skills: ["JUnit", "Mockito", "Pytest"],
+      displayOrder: 6,
     },
     {
+      id: 7,
       category: "CS Concepts",
-      suitModule: "NEURAL FOUNDATIONS",
+      suitModule: "ALGORITHMIC FOUNDATIONS",
       icon: "Cpu",
+      description: "Rigorous algorithmic discipline and asymptotic complexity analysis.",
       skills: [
         "Data Structures",
         "Algorithms",
@@ -233,45 +280,65 @@ export const RESUME_DATA = {
         "System Design basics",
         "Complexity Analysis",
       ],
-      description: "Rigorous algorithmic discipline and asymptotic efficiency.",
+      displayOrder: 7,
     },
   ] as SkillCategory[],
 
-  credentials: [
+  certifications: [
     {
+      id: 1,
       title: "InAmigos Foundation Internship",
       issuer: "InAmigos Foundation",
-      type: "internship",
+      dates: "Apr 2026 – May 2026",
       link: "https://drive.google.com/drive/u/2/folders/13wFVZXq9aytveHus7OP1GpGb9iN_i9cl",
-      description: "Awarded appreciation certificate for web development, production responsiveness, and payment gateway delivery.",
+      type: "internship",
+      description:
+        "Awarded appreciation certificate for web development, production responsiveness, and payment gateway delivery.",
+      displayOrder: 1,
     },
     {
+      id: 2,
       title: "AI & Machine Learning Software Workshops",
       issuer: "Industry Engineering Consortium",
       dates: "Jan 2026 – Feb 2026",
+      link: null,
       type: "workshop",
-      description: "Participated in hands-on workshops covering practical ML implementation, emerging technologies, and modern developer tooling.",
+      description:
+        "Participated in hands-on workshops covering practical ML implementation, emerging technologies, and modern developer tooling.",
+      displayOrder: 2,
     },
     {
+      id: 3,
       title: "Active Algorithmic Mastery & LeetCode",
       issuer: "LeetCode (Self-directed)",
-      type: "practice",
+      dates: null,
       link: "https://leetcode.com/u/datsaryan/",
-      description: "Regularly solves algorithmic challenges covering Trees, Graphs, Dynamic Programming, and Arrays.",
+      type: "practice",
+      description:
+        "Regularly solves algorithmic challenges covering Trees, Graphs, Dynamic Programming, and Arrays.",
+      displayOrder: 3,
     },
     {
+      id: 4,
       title: "IBM Web Development Certificate",
       issuer: "IBM / YourLearning",
-      type: "certification",
+      dates: null,
       link: "https://skills.yourlearning.ibm.com/certificate/share/30c6fbdeddewogICJsZWFybmVyQ05VTSIgOiAiNzc1MTU3OVJFRyIsCiAgIm9iamVjdFR5cGUiIDogIkFDVElWSVRZIiwKICAib2JqZWN0SWQiIDogIlVSTC03NEQ0NDI0MTIxRTMiCn0a030fe9500-10",
-      description: "Professional certification validating web application architecture, client-side engineering, and standards compliance.",
+      type: "certification",
+      description:
+        "Professional certification validating web application architecture, client-side engineering, and standards compliance.",
+      displayOrder: 4,
     },
     {
+      id: 5,
       title: "Introduction to IoT Certification",
       issuer: "NPTEL / IIT",
+      dates: null,
+      link: "https://drive.google.com/file/d/1r910n2UXHTJkGke2zjC3cP9q_9YSJ2fI/view?usp=sharing",
       type: "certification",
-      link: "https://drive.google.com/file/d/1r910n2UXHTJkGke2zjC3cP9q_9YSJ2fI/view",
-      description: "Comprehensive national certification on Internet of Things architectures, embedded networks, and sensor data.",
+      description:
+        "Comprehensive national certification on Internet of Things architectures, embedded networks, and sensor data.",
+      displayOrder: 5,
     },
-  ] as CertificationItem[],
+  ] as Certification[],
 };

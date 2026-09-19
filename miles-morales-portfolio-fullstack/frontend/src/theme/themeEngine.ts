@@ -1,58 +1,48 @@
-export type ThemeName = 'dark' | 'light';
+export type WorldMode = 'hawkins' | 'upsidedown';
 
-const STORAGE_KEY = 'spider_theme';
+const STORAGE_KEY = 'stranger_world';
 
-/**
- * Tiny subscribable store for the light/dark palette. All it does is toggle
- * `class="light"` on <html> — every colour in the app resolves through the CSS
- * variables defined for that class in index.css, so nothing else has to know
- * which theme is active.
- */
-class ThemeEngine {
-  private theme: ThemeName = 'dark';
-  private listeners = new Set<(t: ThemeName) => void>();
+class WorldEngine {
+  private world: WorldMode = 'hawkins';
+  private listeners = new Set<(w: WorldMode) => void>();
 
   constructor() {
     if (typeof window === 'undefined') return;
 
-    const saved = localStorage.getItem(STORAGE_KEY) as ThemeName | null;
-    if (saved === 'light' || saved === 'dark') {
-      this.theme = saved;
-    } else if (window.matchMedia('(prefers-color-scheme: light)').matches) {
-      // Respect the OS preference on a first visit, then remember the choice.
-      this.theme = 'light';
+    const saved = localStorage.getItem(STORAGE_KEY) as WorldMode | null;
+    if (saved === 'upsidedown' || saved === 'hawkins') {
+      this.world = saved;
     }
     this.apply();
   }
 
   private apply() {
     if (typeof document === 'undefined') return;
-    document.documentElement.classList.toggle('light', this.theme === 'light');
-    document.documentElement.style.colorScheme = this.theme;
+    document.documentElement.classList.toggle('upsidedown', this.world === 'upsidedown');
   }
 
-  public get(): ThemeName {
-    return this.theme;
+  public get(): WorldMode {
+    return this.world;
   }
 
-  public set(theme: ThemeName) {
-    this.theme = theme;
+  public set(world: WorldMode) {
+    this.world = world;
     this.apply();
     try {
-      localStorage.setItem(STORAGE_KEY, theme);
+      localStorage.setItem(STORAGE_KEY, world);
     } catch {
-      /* private browsing — the theme just won't persist */
+      // Ignore private browsing storage restrictions
     }
-    this.listeners.forEach((cb) => cb(theme));
+    this.listeners.forEach((cb) => cb(world));
   }
 
-  public toggle(): ThemeName {
-    const next: ThemeName = this.theme === 'dark' ? 'light' : 'dark';
+  public toggle(): WorldMode {
+    const next: WorldMode = this.world === 'hawkins' ? 'upsidedown' : 'hawkins';
     this.set(next);
     return next;
   }
 
-  public subscribe(cb: (t: ThemeName) => void) {
+  public subscribe(cb: (w: WorldMode) => void) {
     this.listeners.add(cb);
     return () => {
       this.listeners.delete(cb);
@@ -60,4 +50,4 @@ class ThemeEngine {
   }
 }
 
-export const theme = new ThemeEngine();
+export const worldEngine = new WorldEngine();

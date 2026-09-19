@@ -1,140 +1,133 @@
 import React from 'react';
-import { useResumeData } from '../../data/useResumeData';
-import { User, GraduationCap, BookOpen, Terminal, Shield } from 'lucide-react';
-import { sound } from '../../audio/soundEngine';
+import { ProfileData, WorldMode } from '../../types/portfolio';
+import { GraduationCap, Award, MapPin, Mail, Phone, BookOpen, Fingerprint } from 'lucide-react';
 
-export const AboutSection: React.FC = () => {
-  const { personal, education } = useResumeData();
+interface AboutSectionProps {
+  personal: ProfileData;
+  world: WorldMode;
+}
 
+export const AboutSection: React.FC<AboutSectionProps> = ({ personal, world }) => {
   return (
-    <section id="about" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
-      {/* Section Header */}
-      <div className="mb-12">
-        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
-          <User className="w-4 h-4" />
-          <span>DOSSIER // 01</span>
-          <span className="text-borderDark">————</span>
-          <span className="text-subtext">BACKGROUND PROTOCOL</span>
-        </div>
-        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
-          <span>THE PERSON BEHIND</span>
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider to-venom-purple">
-            THE MASK
-          </span>
-        </h2>
-      </div>
-
-      {/* Comic Panel Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-        {/* Main Panel 1: Origin Philosophy & Engineering Mindset */}
-        <div className="lg:col-span-7 bg-surface/90 border border-borderDark comic-border p-6 sm:p-8 relative overflow-hidden">
-          {/* Halftone texture inside */}
-          <div className="absolute top-0 right-0 w-48 h-48 bg-halftone-red opacity-15 pointer-events-none" />
-
-          <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-6">
-            <span className="font-mono text-xs text-graffiti-yellow font-bold uppercase tracking-wider flex items-center gap-2">
-              <Terminal className="w-4 h-4 text-spider" />
-              FULL-STACK ENGINEERING DNA
-            </span>
-            <span className="text-[10px] font-mono text-subtext bg-void px-2 py-0.5 border border-borderDark">
-              EARTH-1610 ARCHIVE
-            </span>
+    <section id="about" className="py-20 px-4 sm:px-6 relative">
+      <div className="max-w-5xl mx-auto">
+        {/* Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-4 border-b border-hawkins-border">
+          <div>
+            <div className="text-xs font-mono tracking-widest text-hawkins-red uppercase font-semibold mb-1 flex items-center gap-2">
+              <Fingerprint className="w-4 h-4" />
+              SECTION 01 // PERSONNEL DOSSIER
+            </div>
+            <h2 className="text-3xl sm:text-4xl font-title text-hawkins-text tracking-wide">
+              THE PERSON BEHIND THE SIGNAL
+            </h2>
           </div>
-
-          <div className="space-y-4 text-paper/90 leading-relaxed font-sans text-sm sm:text-base">
-            <p>
-              I am a <strong className="text-headline font-semibold">Full Stack Engineer</strong> and Computer Science undergraduate with hands-on experience designing end-to-end web applications. My work spans the entire lifecycle: from relational schema design and Spring Boot REST micro-architectures to high-performance React frontends.
-            </p>
-            <p>
-              I specialize in robust software infrastructure — implementing practical authentication, role-based access control (RBAC), multi-tenant isolation, and continuous Flyway database migrations.
-            </p>
-            <p>
-              Beyond feature engineering, I maintain a disciplined algorithmic foundation through active daily problem-solving on LeetCode, mastering Data Structures, Graph algorithms, and System Design fundamentals.
-            </p>
-          </div>
-
-          {/* Key Traits Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 mt-6 border-t border-borderDark/70">
-            <div className="bg-ink/70 border border-borderDark p-3">
-              <div className="font-mono text-xs text-spider font-bold uppercase">Multi-Tenancy</div>
-              <div className="text-[11px] text-subtext mt-1">Tenant-isolated schemas & data boundaries</div>
-            </div>
-            <div className="bg-ink/70 border border-borderDark p-3">
-              <div className="font-mono text-xs text-venom-purple font-bold uppercase">Security & Auth</div>
-              <div className="text-[11px] text-subtext mt-1">JWT token pipelines & granular RBAC</div>
-            </div>
-            <div className="bg-ink/70 border border-borderDark p-3">
-              <div className="font-mono text-xs text-graffiti-yellow font-bold uppercase">Rigorous QA</div>
-              <div className="text-[11px] text-subtext mt-1">80%+ test coverage with JUnit & Mockito</div>
-            </div>
+          <div className="mt-3 sm:mt-0">
+            <span className="classified-stamp text-xs">
+              CONFIDENTIAL // FILE NO. 8602
+            </span>
           </div>
         </div>
 
-        {/* Side Panel 2: Academic Origin Arc & Coursework */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          {/* Education Card */}
-          <div className="bg-ink/90 border border-spider/50 comic-border p-6 relative">
-            <div className="flex items-center gap-2 mb-3">
-              <GraduationCap className="w-5 h-5 text-spider" />
-              <span className="font-mono text-xs text-spider font-bold uppercase tracking-wider">
-                TRAINING ARC // EDUCATION
+        {/* Dossier Card */}
+        <div className="case-file-border rounded-lg p-6 sm:p-8 bg-hawkins-card/80 backdrop-blur">
+          {/* Header Metadata Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pb-6 border-b border-hawkins-border/60">
+            {/* Identity Photo / Badge */}
+            <div className="flex flex-col items-center justify-center p-6 bg-hawkins-surface/90 border border-hawkins-border rounded">
+              <div className="relative w-28 h-28 rounded-full border-2 border-hawkins-red/60 p-1 flex items-center justify-center mb-3">
+                <div className="w-full h-full rounded-full bg-hawkins-void flex items-center justify-center overflow-hidden">
+                  <span className="font-title text-3xl text-hawkins-amber font-bold">
+                    AS
+                  </span>
+                </div>
+                <div className="absolute -bottom-1 -right-1 bg-hawkins-red text-white text-[9px] font-mono px-1.5 py-0.5 rounded font-bold">
+                  011
+                </div>
+              </div>
+              <span className="font-title text-base text-hawkins-text font-semibold">{personal.name}</span>
+              <span className="text-xs font-mono text-hawkins-text-dim mt-0.5">{personal.title}</span>
+              <span className="text-[10px] font-mono text-hawkins-crt mt-2 px-2 py-0.5 rounded bg-hawkins-void border border-hawkins-border">
+                {personal.status}
               </span>
             </div>
 
-            <h3 className="font-display text-2xl text-headline uppercase tracking-wide">
-              {education.institution}
-            </h3>
-            <p className="text-sm text-subtext mt-1 font-mono">
-              {education.degree}
-            </p>
-
-            <div className="mt-4 flex flex-wrap items-center gap-3">
-              <div className="px-3 py-1 bg-surface border border-spider text-headline font-mono text-xs font-bold">
-                CGPA: {education.cgpa}
+            {/* Core Credentials & Coordinates */}
+            <div className="md:col-span-2 flex flex-col justify-between space-y-4">
+              <div>
+                <span className="text-[11px] font-mono text-hawkins-amber uppercase tracking-wider block mb-1">
+                  OFFICIAL SUMMARY // SUBJECT BACKGROUND
+                </span>
+                <p className="text-sm text-hawkins-text leading-relaxed font-sans">
+                  {personal.summary}
+                </p>
               </div>
-              <div className="px-3 py-1 bg-surface border border-borderDark text-graffiti-yellow font-mono text-xs">
-                {education.timeline}
+
+              {/* Coordinates */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                <div className="flex items-center gap-2 text-xs font-mono text-hawkins-text-muted">
+                  <MapPin className="w-4 h-4 text-hawkins-red shrink-0" />
+                  <span>{personal.location}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-hawkins-text-muted">
+                  <Mail className="w-4 h-4 text-hawkins-amber shrink-0" />
+                  <a href={`mailto:${personal.email}`} className="hover:text-hawkins-text truncate">
+                    {personal.email}
+                  </a>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-hawkins-text-muted">
+                  <Phone className="w-4 h-4 text-hawkins-crt shrink-0" />
+                  <span>{personal.phone}</span>
+                </div>
+                <div className="flex items-center gap-2 text-xs font-mono text-hawkins-text-muted">
+                  <GraduationCap className="w-4 h-4 text-hawkins-red shrink-0" />
+                  <span>CGPA: {personal.cgpa}</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Relevant Coursework Panel */}
-          <div className="bg-surface/80 border border-borderDark p-6 flex-1 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center gap-2 mb-3">
-                <BookOpen className="w-4 h-4 text-graffiti-yellow" />
-                <span className="font-mono text-xs text-subtext uppercase tracking-wider font-semibold">
-                  RELEVANT ACADEMIC COURSEWORK
+          {/* Academic Records */}
+          <div className="mt-6 pt-2">
+            <div className="flex items-center gap-2 text-xs font-mono text-hawkins-amber uppercase tracking-wider mb-4">
+              <BookOpen className="w-4 h-4 text-hawkins-amber" />
+              ACADEMIC VERIFICATION // OP JINDAL UNIVERSITY
+            </div>
+
+            <div className="bg-hawkins-surface/60 p-4 rounded border border-hawkins-border/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
+              <div>
+                <h3 className="text-base font-semibold text-hawkins-text font-mono">
+                  {personal.degree}
+                </h3>
+                <span className="text-xs text-hawkins-text-muted font-sans">
+                  {personal.institution}
                 </span>
               </div>
+              <div className="text-right">
+                <span className="text-xs font-mono text-hawkins-amber font-semibold block">
+                  {personal.timeline}
+                </span>
+                <span className="text-xs font-mono text-hawkins-crt">
+                  Cumulative Grade: {personal.cgpa}
+                </span>
+              </div>
+            </div>
 
-              <div className="flex flex-wrap gap-1.5 mt-2">
-                {education.relevantCoursework.map((course) => (
+            {/* Coursework Tags */}
+            <div>
+              <span className="text-[11px] font-mono text-hawkins-text-dim uppercase tracking-wider block mb-2">
+                VERIFIED RIGOROUS COURSEWORK:
+              </span>
+              <div className="flex flex-wrap gap-1.5">
+                {personal.relevantCoursework.map((course, idx) => (
                   <span
-                    key={course}
-                    className="px-2.5 py-1 bg-ink text-paper/80 font-mono text-xs border border-borderDark hover:border-spider hover:text-headline transition-colors cursor-default"
+                    key={idx}
+                    className="px-2.5 py-1 text-xs font-mono rounded bg-hawkins-void border border-hawkins-border/80 text-hawkins-text-muted hover:text-hawkins-text hover:border-hawkins-border transition-colors"
                   >
                     {course}
                   </span>
                 ))}
               </div>
-            </div>
-
-            {/* Resume verification stamp */}
-            <div className="mt-6 pt-4 border-t border-borderDark/60 flex items-center justify-between font-mono text-[10px] text-subtext">
-              <span className="flex items-center gap-1">
-                <Shield className="w-3.5 h-3.5 text-spider" />
-                VERIFIED VIA RESUME
-              </span>
-              <a
-                href={personal.links.leetcode}
-                target="_blank"
-                rel="noopener noreferrer"
-                onClick={() => sound.playClick()}
-                className="text-spider hover:underline font-bold"
-              >
-                LEETCODE PROFILE &rarr;
-              </a>
             </div>
           </div>
         </div>
