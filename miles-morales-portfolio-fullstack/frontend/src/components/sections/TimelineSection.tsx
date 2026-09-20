@@ -1,172 +1,131 @@
 import React from 'react';
-import { Certification, EducationItem, ExperienceItem, WorldMode } from '../../types/portfolio';
-import { Archive, Calendar, Award, ExternalLink, Briefcase, GraduationCap, Code2 } from 'lucide-react';
-import { strangerAudio } from '../../audio/soundEngine';
+import { useResumeData } from '../../data/useResumeData';
+import { Award, ExternalLink, Calendar, CheckCircle2, BookmarkCheck, Sparkles, MapPin } from 'lucide-react';
+import { sound } from '../../audio/soundEngine';
 
-interface TimelineSectionProps {
-  certifications: Certification[];
-  education: EducationItem[];
-  experience: ExperienceItem[];
-  world: WorldMode;
-}
+export const TimelineSection: React.FC = () => {
+  const { education, credentials } = useResumeData();
 
-export const TimelineSection: React.FC<TimelineSectionProps> = ({ certifications, education, experience, world }) => {
   return (
-    <section id="timeline" className="py-20 px-4 sm:px-6 relative bg-hawkins-void/70">
-      <div className="max-w-5xl mx-auto">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-4 border-b border-hawkins-border">
-          <div>
-            <div className="text-xs font-mono tracking-widest text-hawkins-amber uppercase font-semibold mb-1 flex items-center gap-2">
-              <Archive className="w-4 h-4 text-hawkins-red" />
-              SECTION 04 // HAWKINS ARCHIVES
+    <section id="timeline" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+      {/* Section Header */}
+      <div className="mb-12">
+        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
+          <Award className="w-4 h-4" />
+          <span>ORIGIN & CREDENTIALS // 04</span>
+          <span className="text-borderDark">————</span>
+          <span className="text-subtext">EXPERIENCE & VERIFIED CERTIFICATIONS</span>
+        </div>
+        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
+          <span>THE JOURNEY &</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider via-graffiti-yellow to-venom-purple">
+            CREDENTIALS
+          </span>
+        </h2>
+        <p className="text-sm sm:text-base text-subtext mt-2 font-mono">
+          // CHRONICLED OPERATIONAL TIMELINE & VERIFIED INSTITUTIONAL RECORDS
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+        {/* Left Column: Education & Training Arc */}
+        <div className="lg:col-span-5 space-y-6">
+          <div className="bg-surface/90 border border-borderDark comic-border p-6 relative">
+            <div className="flex items-center gap-2 mb-4 font-mono text-xs text-spider font-bold uppercase">
+              <Sparkles className="w-4 h-4" />
+              <span>CORE ACADEMIC STATION</span>
             </div>
-            <h2 className="text-3xl sm:text-4xl font-title text-hawkins-text tracking-wide">
-              CHRONOLOGICAL EVIDENCE &amp; CREDENTIALS
-            </h2>
-          </div>
-          <div className="mt-3 sm:mt-0 text-xs font-mono text-hawkins-text-dim">
-            VERIFIED REPOSITORIES // DEPT. OF ENERGY
+
+            <h3 className="font-display text-2xl sm:text-3xl text-headline uppercase tracking-wide">
+              {education.institution}
+            </h3>
+            <p className="text-sm font-mono text-subtext mt-1">
+              {education.degree}
+            </p>
+
+            <div className="mt-4 flex flex-wrap gap-2">
+              <span className="px-3 py-1 bg-ink text-headline font-mono text-xs border border-spider font-bold">
+                CGPA: {education.cgpa}
+              </span>
+              <span className="px-3 py-1 bg-ink text-graffiti-yellow font-mono text-xs border border-borderDark flex items-center gap-1">
+                <Calendar className="w-3.5 h-3.5" />
+                {education.timeline}
+              </span>
+              <span className="px-3 py-1 bg-ink text-subtext font-mono text-xs border border-borderDark flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-spider" />
+                Raigarh, India
+              </span>
+            </div>
+
+            <div className="mt-6 pt-4 border-t border-borderDark/80">
+              <div className="font-mono text-xs text-subtext uppercase tracking-wider mb-2">
+                Focused Engineering Curricula:
+              </div>
+              <div className="text-xs text-paper/80 leading-relaxed font-sans">
+                Comprehensive training in distributed networks, artificial intelligence, neural networks & deep learning, database systems, and modern operating system kernels.
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Timeline Records */}
-        <div className="relative border-l-2 border-hawkins-border/80 ml-4 sm:ml-6 space-y-8 pb-4">
-          {/* 1. Degree Record */}
-          {education.map((edu) => (
-            <div key={edu.id} className="relative pl-6 sm:pl-8 group">
-              {/* Timeline Marker */}
-              <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-hawkins-void border-2 border-hawkins-red flex items-center justify-center group-hover:scale-125 transition-transform" />
+        {/* Right Column: Experience, Workshops & Certifications Timeline */}
+        <div className="lg:col-span-7">
+          <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-spider before:via-venom-purple before:to-borderDark">
+            {credentials.map((item, idx) => (
+              <div
+                key={idx}
+                className="relative bg-surface/80 border border-borderDark comic-border p-5 sm:p-6 transition-all hover:border-spider/80"
+              >
+                {/* Spider Node Marker on timeline */}
+                <div className="absolute -left-[27px] sm:-left-[35px] top-6 w-4 h-4 bg-void border-2 border-spider rounded-full flex items-center justify-center">
+                  <div className="w-1.5 h-1.5 bg-spider rounded-full" />
+                </div>
 
-              <div className="case-file-border rounded-lg p-5 bg-hawkins-card/85">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                  <div className="flex items-center gap-2">
-                    <GraduationCap className="w-4 h-4 text-hawkins-amber" />
-                    <span className="text-xs font-mono font-bold text-hawkins-amber uppercase">
-                      ACADEMIC APPOINTMENT
-                    </span>
-                  </div>
-                  <span className="text-xs font-mono text-hawkins-text-dim flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {edu.timeline}
+                {/* Top Tape */}
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <span className="font-mono text-xs text-spider font-bold uppercase tracking-wider flex items-center gap-1.5">
+                    <BookmarkCheck className="w-4 h-4" />
+                    {item.issuer}
                   </span>
-                </div>
-
-                <h3 className="text-lg font-mono font-bold text-hawkins-text">
-                  {edu.degree}
-                </h3>
-                <div className="text-xs text-hawkins-text-muted font-sans mb-3">
-                  {edu.institution} — Cumulative Grade: <strong className="text-hawkins-crt">{edu.cgpa}</strong>
-                </div>
-
-                <div className="flex flex-wrap gap-1.5 mt-2">
-                  {edu.relevantCoursework.slice(0, 6).map((c, i) => (
-                    <span key={i} className="px-2 py-0.5 text-[10px] font-mono rounded bg-hawkins-surface border border-hawkins-border text-hawkins-text-dim">
-                      {c}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* 2. Professional Experience Records */}
-          {experience.map((exp) => (
-            <div key={exp.id} className="relative pl-6 sm:pl-8 group">
-              <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-hawkins-void border-2 border-hawkins-amber flex items-center justify-center group-hover:scale-125 transition-transform" />
-
-              <div className="case-file-border rounded-lg p-5 bg-hawkins-card/85">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Briefcase className="w-4 h-4 text-hawkins-red" />
-                    <span className="text-xs font-mono font-bold text-hawkins-red uppercase">
-                      PRACTICAL FIELD MISSION
-                    </span>
-                  </div>
-                  <span className="text-xs font-mono text-hawkins-text-dim flex items-center gap-1">
-                    <Calendar className="w-3.5 h-3.5" />
-                    {exp.dates}
-                  </span>
-                </div>
-
-                <h3 className="text-lg font-mono font-bold text-hawkins-text">
-                  {exp.role} — <span className="text-hawkins-text-muted">{exp.organization}</span>
-                </h3>
-                <p className="text-xs sm:text-sm text-hawkins-text-muted font-sans my-2 leading-relaxed">
-                  {exp.description}
-                </p>
-
-                <ul className="space-y-1 my-3 text-xs text-hawkins-text-dim font-sans">
-                  {exp.bullets.map((b, bi) => (
-                    <li key={bi} className="flex items-start gap-1.5">
-                      <span className="text-hawkins-amber font-mono font-bold">›</span>
-                      <span>{b}</span>
-                    </li>
-                  ))}
-                </ul>
-
-                <div className="flex flex-wrap gap-1.5 pt-2 border-t border-hawkins-border/50">
-                  {exp.techStack.map((tech, ti) => (
-                    <span key={ti} className="px-2 py-0.5 text-[10px] font-mono rounded bg-hawkins-surface border border-hawkins-border text-hawkins-amber">
-                      {tech}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
-
-          {/* 3. Verified Certifications & Workshops */}
-          {certifications.map((cert) => (
-            <div key={cert.id} className="relative pl-6 sm:pl-8 group">
-              <div className="absolute -left-[9px] top-1.5 w-4 h-4 rounded-full bg-hawkins-void border-2 border-hawkins-crt flex items-center justify-center group-hover:scale-125 transition-transform" />
-
-              <div className="case-file-border rounded-lg p-5 bg-hawkins-card/85">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 mb-2">
-                  <div className="flex items-center gap-2">
-                    <Award className="w-4 h-4 text-hawkins-crt" />
-                    <span className="text-xs font-mono font-bold text-hawkins-crt uppercase">
-                      {cert.type}
-                    </span>
-                  </div>
-                  {cert.dates && (
-                    <span className="text-xs font-mono text-hawkins-text-dim flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {cert.dates}
+                  {item.dates && (
+                    <span className="font-mono text-[11px] text-subtext bg-ink px-2 py-0.5 border border-borderDark">
+                      {item.dates}
                     </span>
                   )}
                 </div>
 
-                <h3 className="text-base sm:text-lg font-mono font-semibold text-hawkins-text">
-                  {cert.title}
-                </h3>
-                {cert.issuer && (
-                  <div className="text-xs font-mono text-hawkins-text-dim mb-2">
-                    Issued by: {cert.issuer}
-                  </div>
-                )}
+                {/* Title */}
+                <h4 className="font-display text-xl text-headline uppercase tracking-wide">
+                  {item.title}
+                </h4>
 
-                <p className="text-xs text-hawkins-text-muted font-sans leading-relaxed mb-3">
-                  {cert.description}
+                {/* Description */}
+                <p className="text-xs sm:text-sm font-sans text-paper/80 mt-2 leading-relaxed">
+                  {item.description}
                 </p>
 
-                {cert.link && (
-                  <div className="pt-2 border-t border-hawkins-border/50">
+                {/* Link if available */}
+                {item.link && (
+                  <div className="mt-4 pt-3 border-t border-borderDark/60 flex items-center justify-between">
+                    <span className="font-mono text-[10px] text-subtext flex items-center gap-1">
+                      <CheckCircle2 className="w-3.5 h-3.5 text-spider" />
+                      AUTHENTIC RESUME ATTESTATION
+                    </span>
                     <a
-                      href={cert.link}
+                      href={item.link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      onClick={() => strangerAudio.playClickSound()}
-                      className="inline-flex items-center gap-1.5 text-xs font-mono text-hawkins-amber hover:text-hawkins-red transition-colors"
+                      onClick={() => sound.playClick()}
+                      className="inline-flex items-center gap-1.5 px-3 py-1 bg-ink hover:bg-spider text-headline hover:text-white font-mono text-xs uppercase font-bold border border-borderDark transition-colors shadow-comic-black"
                     >
-                      <ExternalLink className="w-3.5 h-3.5" />
-                      VERIFY OFFICIAL CREDENTIAL
+                      <span>VIEW CREDENTIAL</span>
+                      <ExternalLink className="w-3 h-3" />
                     </a>
                   </div>
                 )}
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
     </section>

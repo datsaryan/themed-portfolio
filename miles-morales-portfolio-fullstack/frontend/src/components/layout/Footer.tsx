@@ -1,44 +1,89 @@
 import React from 'react';
-import { ArrowUp, Radio, Heart } from 'lucide-react';
-import { strangerAudio } from '../../audio/soundEngine';
+import { useResumeData } from '../../data/useResumeData';
+import { ArrowUp, Github, Linkedin, Terminal, Shield } from 'lucide-react';
+import { sound } from '../../audio/soundEngine';
 
 export const Footer: React.FC = () => {
+  const { personal } = useResumeData();
+
   const scrollToTop = () => {
-    strangerAudio.playClickSound();
+    sound.playThwip();
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   return (
-    <footer className="border-t border-hawkins-border bg-hawkins-surface/80 py-12 px-4 sm:px-6 relative">
-      <div className="max-w-6xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <div className="w-2 h-2 rounded-full bg-hawkins-red animate-pulse" />
-            <span className="font-title text-base text-hawkins-text font-bold tracking-wider">
+    <footer className="relative border-t border-borderDark/80 bg-ink/95 pt-12 pb-16 px-4 sm:px-6">
+      <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Left Side: Identity */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 flex items-center justify-center bg-surface border border-spider">
+              <img
+                src="/assets/spiderman/miles_spider_icon.svg"
+                alt="Miles Icon"
+                className="w-4 h-4"
+              />
+            </div>
+            <span className="font-display text-lg tracking-wider text-headline">
               ARYAN SINGH
             </span>
+            <span className="font-mono text-xs text-spider font-bold">
+              // EARTH-1610
+            </span>
           </div>
-          <div className="text-xs font-mono text-hawkins-text-dim">
-            FULL STACK ENGINEER // HAWKINS ARCHIVES
-          </div>
-          <p className="text-[10px] font-mono text-hawkins-text-dim mt-2 max-w-md">
-            The Stranger Things universe is used purely as creative visual &amp; narrative inspiration for this personal engineering portfolio. Not affiliated with, endorsed by, or sponsored by Netflix or The Duffer Brothers.
+
+          <p className="font-mono text-xs text-subtext mt-2 max-w-md">
+            &ldquo;WITH GREAT CODE COMES GREAT ARCHITECTURAL RESPONSIBILITY.&rdquo;
           </p>
+
+          <div className="flex items-center gap-2 mt-2 text-[10px] font-mono text-subtext/70">
+            <Shield className="w-3 h-3 text-spider" />
+            <span>100% SOURCED FROM ARYAN_FULLSTACK_RESUME.PDF &bull; ZERO FABRICATION</span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-4">
-          <span className="text-[11px] font-mono text-hawkins-crt flex items-center gap-1.5">
-            <Radio className="w-3 h-3" />
-            TELEMETRY ONLINE
-          </span>
+        {/* Middle: Social icons */}
+        <div className="flex items-center gap-3">
+          <a
+            href={personal.links.github}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => sound.playClick()}
+            aria-label="GitHub Profile"
+            className="p-2.5 bg-surface hover:bg-spider text-subtext hover:text-white border border-borderDark transition-colors"
+          >
+            <Github className="w-4 h-4" />
+          </a>
+          <a
+            href={personal.links.linkedin}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => sound.playClick()}
+            aria-label="LinkedIn Profile"
+            className="p-2.5 bg-surface hover:bg-spider text-subtext hover:text-white border border-borderDark transition-colors"
+          >
+            <Linkedin className="w-4 h-4" />
+          </a>
+          <a
+            href={personal.links.leetcode}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => sound.playClick()}
+            aria-label="LeetCode Profile"
+            className="p-2.5 bg-surface hover:bg-graffiti-yellow text-subtext hover:text-void border border-borderDark transition-colors"
+          >
+            <Terminal className="w-4 h-4" />
+          </a>
+        </div>
 
+        {/* Right Side: Back to Top Web Slingshot */}
+        <div>
           <button
             onClick={scrollToTop}
-            className="p-2.5 rounded bg-hawkins-card border border-hawkins-border hover:border-hawkins-red text-hawkins-text-muted hover:text-hawkins-red transition-all focus:outline-none"
-            aria-label="Return to top of page"
-            title="Return to top"
+            className="flex items-center gap-2 px-4 py-2.5 bg-surface hover:bg-concrete border border-borderDark hover:border-spider text-headline font-mono text-xs uppercase font-bold tracking-wider transition-colors"
           >
-            <ArrowUp className="w-4 h-4" />
+            <span>SLING TO APEX</span>
+            <ArrowUp className="w-4 h-4 text-spider" />
           </button>
         </div>
       </div>

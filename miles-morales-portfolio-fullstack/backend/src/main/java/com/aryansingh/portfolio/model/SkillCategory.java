@@ -32,16 +32,6 @@ public class SkillCategory {
     @Column(name = "skill", length = 100)
     private List<String> skills = new ArrayList<>();
 
-    public SkillCategory() {}
-
-    public SkillCategory(String category, String suitModule, String icon, String description, Integer displayOrder) {
-        this.category = category;
-        this.suitModule = suitModule;
-        this.icon = icon;
-        this.description = description;
-        this.displayOrder = displayOrder;
-    }
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

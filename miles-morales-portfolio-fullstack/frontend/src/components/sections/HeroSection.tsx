@@ -1,168 +1,284 @@
-import React from 'react';
-import { FileText, ArrowDown, Github, Linkedin, Code2, ShieldAlert, Cpu, Database } from 'lucide-react';
-import { ProfileData, WorldMode } from '../../types/portfolio';
-import { strangerAudio } from '../../audio/soundEngine';
+import React, { useState, useEffect } from 'react';
+import { useResumeData } from '../../data/useResumeData';
+import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
+import { ArrowDown, FileText, Send, Radio, Terminal, Zap, Headphones, Play, Pause } from 'lucide-react';
 
 interface HeroSectionProps {
-  personal: ProfileData;
-  world: WorldMode;
+  onTriggerVenom: () => void;
 }
 
-export const HeroSection: React.FC<HeroSectionProps> = ({ personal, world }) => {
-  const scrollTo = (id: string) => {
-    strangerAudio.playClickSound();
-    const el = document.getElementById(id);
+export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
+  const { personal } = useResumeData();
+  const [audioState, setAudioState] = useState(sound.getState());
+
+  useEffect(() => {
+    const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
+    return () => unsub();
+  }, []);
+
+  const scrollToMissions = () => {
+    sound.playThwip();
+    const el = document.querySelector('#projects');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const scrollToContact = () => {
+    sound.playClick();
+    const el = document.querySelector('#contact');
     if (el) el.scrollIntoView({ behavior: 'smooth' });
   };
 
   return (
-    <section
-      id="hero"
-      className="relative min-h-[92vh] flex items-center justify-center pt-24 pb-16 overflow-hidden px-4 sm:px-6"
-    >
-      {/* Central Rift Portal Graphic in Background */}
-      <div className="absolute inset-0 flex items-center justify-center pointer-events-none" aria-hidden="true">
-        <div
-          className={`w-[320px] h-[320px] sm:w-[540px] sm:h-[540px] rounded-full blur-3xl opacity-20 transition-all duration-1000 ${
-            world === 'upsidedown'
-              ? 'bg-gradient-to-tr from-hawkins-red via-purple-950 to-hawkins-crt opacity-30 animate-pulse-subtle'
-              : 'bg-gradient-to-tr from-hawkins-red via-amber-800 to-hawkins-navy'
-          }`}
-        />
-        {/* Dimensional Rift Core SVG */}
-        <svg
-          className={`w-72 h-72 sm:w-96 sm:h-96 opacity-30 animate-rift-glow transition-all duration-700 ${
-            world === 'upsidedown' ? 'scale-110 text-hawkins-red' : 'text-hawkins-amber'
-          }`}
-          viewBox="0 0 200 200"
-          fill="none"
-        >
-          <circle cx="100" cy="100" r="80" stroke="currentColor" strokeWidth="1" strokeDasharray="4 6" />
-          <circle cx="100" cy="100" r="60" stroke="currentColor" strokeWidth="1.5" opacity="0.6" />
-          <path
-            d="M100 10 C60 60 60 140 100 190 C140 140 140 60 100 10 Z"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeDasharray="8 4"
-          />
-          <path
-            d="M10 100 C60 60 140 60 190 100 C140 140 60 140 10 100 Z"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeDasharray="8 4"
-          />
-        </svg>
+    <section className="relative min-h-screen flex items-center justify-center pt-24 pb-16 px-4 sm:px-6 overflow-hidden">
+      {/* Background Spider-Web Stencil & Graffiti Watermark */}
+      <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-5">
+        <span className="font-comic text-[22vw] text-spider tracking-tighter uppercase transform -rotate-6">
+          SPIDER-MAN
+        </span>
       </div>
 
-      <div className="relative z-10 max-w-4xl mx-auto text-center flex flex-col items-center">
-        {/* Investigation Banner */}
-        <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded border border-hawkins-border bg-hawkins-surface/80 mb-6 backdrop-blur">
-          <span className="w-2 h-2 rounded-full bg-hawkins-red animate-ping" />
-          <span className="text-[11px] font-mono tracking-widest text-hawkins-amber uppercase font-semibold">
-            {world === 'upsidedown' ? 'DIMENSIONAL BREACH DETECTED // SECTOR 11' : 'CLASSIFIED DOSSIER // HAWKINS ARCHIVES'}
-          </span>
+      <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+        {/* Left Column: Comic Narrative & Typography */}
+        <div className="lg:col-span-7 flex flex-col items-start space-y-6">
+          {/* Comic Label Pill & BGM Walkman Pill */}
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-spider text-white font-mono text-xs font-bold uppercase tracking-wider shadow-comic-black border border-white/20">
+              <Radio className="w-3 h-3 animate-pulse" />
+              EARTH-1610 TRANSMISSION
+            </span>
+            <span className="px-2.5 py-1 bg-surface border border-borderDark text-subtext font-mono text-xs">
+              SECTOR: WEB ARCHITECTURE
+            </span>
+          </div>
+
+          {/* Subtitle / Catchphrase */}
+          <div className="font-mono text-xs sm:text-sm text-spider font-bold tracking-widest uppercase flex items-center gap-2">
+            <span className="inline-block w-8 h-[2px] bg-spider" />
+            {personal.tagline}
+          </div>
+
+          {/* Main Giant Display Typography */}
+          <div className="space-y-1">
+            <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl tracking-tight text-headline uppercase leading-[0.9] select-none">
+              <span className="block text-paper">ARYAN</span>
+              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-spider via-spider-bright to-venom-purple glitch-hover">
+                SINGH
+              </span>
+            </h1>
+            <div className="pt-2 font-mono text-base sm:text-lg text-graffiti-yellow font-semibold tracking-wider flex items-center gap-2">
+              <Terminal className="w-5 h-5 text-spider" />
+              <span>{personal.title}</span>
+              <span className="text-subtext/50">|</span>
+              <span className="text-xs text-subtext">JAVA // SPRING BOOT // REACT // POSTGRESQL</span>
+            </div>
+          </div>
+
+          {/* Authentic Resume Summary Paragraph */}
+          <div className="relative p-4 sm:p-5 bg-surface/80 border-l-4 border-spider border-y border-r border-borderDark/60 comic-cut">
+            <div className="text-[10px] font-mono text-subtext/70 uppercase tracking-widest mb-1.5 flex items-center justify-between">
+              <span>// OPERATIVE SPECIFICATION</span>
+              <span>B.TECH CSE &bull; OP JINDAL UNIV</span>
+            </div>
+            <p className="text-sm sm:text-base text-paper/90 leading-relaxed font-sans">
+              {personal.summary}
+            </p>
+          </div>
+
+          {/* Action CTAs */}
+          <div className="flex flex-wrap items-center gap-4 pt-2 w-full sm:w-auto">
+            <button
+              onClick={scrollToMissions}
+              className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-widest transition-all shadow-comic-black border border-white/20 hover:translate-x-0.5 hover:-translate-y-0.5"
+            >
+              <span>EXPLORE MISSIONS</span>
+              <ArrowDown className="w-4 h-4 animate-bounce" />
+            </button>
+
+            <a
+              href="/Aryan_FullStack_Resume.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => sound.playClick()}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-surface hover:bg-concrete border border-borderDark hover:border-spider text-headline font-mono text-xs uppercase font-bold tracking-wider transition-all"
+            >
+              <FileText className="w-4 h-4 text-spider" />
+              <span>ACCESS FULL RESUME</span>
+            </a>
+
+            <button
+              onClick={scrollToContact}
+              className="w-full sm:w-auto flex items-center justify-center gap-2 px-5 py-3.5 bg-transparent hover:bg-surface border border-borderDark text-subtext hover:text-headline font-mono text-xs uppercase font-medium transition-all"
+            >
+              <Send className="w-3.5 h-3.5" />
+              <span>TRANSMIT SIGNAL</span>
+            </button>
+          </div>
+
+          {/* Miles Morales Walkman Soundtrack Player */}
+          <div className="w-full">
+            <button
+              onClick={() => sound.toggleSong()}
+              className="w-full flex items-center justify-between p-3 bg-surface/90 hover:bg-ink border border-spider/60 hover:border-spider text-headline transition-all shadow-comic-black group"
+              title={`${audioState.isPlaying ? 'Pause' : 'Play'} ${BGM_TRACK.title} — ${BGM_TRACK.artist}`}
+            >
+              <div className="flex items-center gap-3">
+                <div className={`p-2 border ${audioState.isPlaying ? 'bg-spider border-white text-white' : 'bg-concrete border-borderDark text-spider'}`}>
+                  <Headphones className="w-4 h-4" />
+                </div>
+                <div className="flex flex-col text-left">
+                  <span className="text-[10px] font-mono text-spider font-bold tracking-widest uppercase flex items-center gap-1.5">
+                    <span>MILES' SOUNDTRACK // BGM</span>
+                    {audioState.isPlaying && <span className="w-1.5 h-1.5 rounded-full bg-spider animate-ping" />}
+                  </span>
+                  <span className="text-xs sm:text-sm font-display uppercase tracking-wider text-headline group-hover:text-graffiti-yellow">
+                    {BGM_TRACK.title} &bull; {BGM_TRACK.artist}
+                  </span>
+                  <span className="text-[10px] font-mono text-subtext">
+                    {BGM_TRACK.soundtrack}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {audioState.isPlaying ? (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-spider text-white font-mono text-xs font-bold uppercase shadow-comic-black">
+                    <Pause className="w-3.5 h-3.5 fill-white" />
+                    <span className="hidden sm:inline">PAUSE BGM</span>
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-1.5 px-3 py-1.5 bg-spider text-white font-mono text-xs font-bold uppercase shadow-comic-black">
+                    <Play className="w-3.5 h-3.5 fill-white" />
+                    <span className="hidden sm:inline">PLAY BGM</span>
+                  </div>
+                )}
+              </div>
+            </button>
+          </div>
+
+          {/* Live Telemetry / Suit Status bar */}
+          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-borderDark/60 w-full font-mono text-[11px]">
+            <div className="flex flex-col">
+              <span className="text-subtext/70">OPERATIONAL STATUS</span>
+              <span className="text-headline font-bold flex items-center gap-1.5 mt-0.5">
+                <span className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                ACTIVE OPERATIVE
+              </span>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-subtext/70">SUIT CHARGE</span>
+              <button
+                onClick={onTriggerVenom}
+                className="text-venom-purple hover:underline font-bold flex items-center gap-1 mt-0.5 text-left"
+              >
+                <Zap className="w-3 h-3 fill-venom-purple" />
+                100% (READY)
+              </button>
+            </div>
+            <div className="flex flex-col">
+              <span className="text-subtext/70">SYSTEM CORE</span>
+              <span className="text-graffiti-yellow font-bold mt-0.5">
+                REST &bull; CLOUD &bull; DSA
+              </span>
+            </div>
+          </div>
         </div>
 
-        {/* Hero Name with Iconic Stranger Things Typography */}
-        <h1 className="text-4xl sm:text-6xl md:text-7xl lg:text-8xl font-title tracking-wider text-hawkins-text mb-4 stranger-title select-none">
-          {personal.name}
-        </h1>
+        {/* Right Column: Miles Morales Themed Hero Visual Art Frame */}
+        <div className="lg:col-span-5 flex justify-center relative">
+          {/* Angled Comic Panel Frame */}
+          <div className="relative w-full max-w-md bg-ink border-2 border-spider shadow-comic-hard p-4 comic-cut">
+            {/* Top Comic Header Tape */}
+            <div className="flex items-center justify-between border-b border-borderDark pb-2 mb-3 font-mono text-[10px] text-subtext">
+              <span className="text-spider font-bold tracking-widest">// SUIT RECON HUD</span>
+              <span className="bg-concrete px-1.5 py-0.5 text-headline">EARTH-1610</span>
+            </div>
 
-        {/* Professional Title & Subtitle */}
-        <div className="text-sm sm:text-base md:text-lg font-mono tracking-widest text-hawkins-red font-semibold mb-3">
-          {personal.title.toUpperCase()}
-        </div>
+            {/* Visual Spider-Man Graphic Silhouette & Web Core */}
+            <div className="relative w-full aspect-[4/5] bg-surface overflow-hidden border border-borderDark flex items-center justify-center">
+              {/* Halftone texture inside frame */}
+              <div className="absolute inset-0 bg-halftone-red opacity-30 pointer-events-none" />
 
-        <p className="max-w-2xl text-hawkins-text-muted text-sm sm:text-base font-sans leading-relaxed mb-8">
-          &ldquo;Building high-concurrency systems from the right side of the stack.&rdquo; Specialized in{' '}
-          <strong className="text-hawkins-amber font-mono font-medium">Java &amp; Spring Boot</strong>,{' '}
-          <strong className="text-hawkins-text font-mono font-medium">React &amp; TypeScript</strong>,{' '}
-          <strong className="text-hawkins-crt font-mono font-medium">SQL &amp; PostgreSQL</strong>, and secured RESTful micro-architectures.
-        </p>
+              {/* Spider Web Matrix background */}
+              <svg
+                className="absolute inset-0 w-full h-full text-borderDark/60 pointer-events-none"
+                viewBox="0 0 400 500"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1"
+              >
+                <line x1="200" y1="250" x2="0" y2="0" />
+                <line x1="200" y1="250" x2="200" y2="0" />
+                <line x1="200" y1="250" x2="400" y2="0" />
+                <line x1="200" y1="250" x2="400" y2="250" />
+                <line x1="200" y1="250" x2="400" y2="500" />
+                <line x1="200" y1="250" x2="200" y2="500" />
+                <line x1="200" y1="250" x2="0" y2="500" />
+                <line x1="200" y1="250" x2="0" y2="250" />
+                {/* Web polygons */}
+                <polygon points="200,190 235,215 235,265 200,290 165,265 165,215" stroke="rgba(230,36,41,0.3)" />
+                <polygon points="200,140 270,180 270,280 200,330 130,280 130,180" stroke="rgba(230,36,41,0.25)" />
+                <polygon points="200,80 320,140 320,320 200,400 80,320 80,140" stroke="rgba(230,36,41,0.2)" />
+              </svg>
 
-        {/* Engineering Stack Badges */}
-        <div className="flex flex-wrap justify-center items-center gap-2 mb-10 max-w-xl">
-          <span className="px-2.5 py-1 text-xs font-mono rounded bg-hawkins-surface border border-hawkins-border text-hawkins-amber flex items-center gap-1.5">
-            <Cpu className="w-3.5 h-3.5" /> Java 21 / Spring Boot 3
-          </span>
-          <span className="px-2.5 py-1 text-xs font-mono rounded bg-hawkins-surface border border-hawkins-border text-hawkins-text flex items-center gap-1.5">
-            <Code2 className="w-3.5 h-3.5" /> React / TypeScript
-          </span>
-          <span className="px-2.5 py-1 text-xs font-mono rounded bg-hawkins-surface border border-hawkins-border text-hawkins-crt flex items-center gap-1.5">
-            <Database className="w-3.5 h-3.5" /> PostgreSQL / Flyway
-          </span>
-          <span className="px-2.5 py-1 text-xs font-mono rounded bg-hawkins-surface border border-hawkins-border text-hawkins-red flex items-center gap-1.5">
-            <ShieldAlert className="w-3.5 h-3.5" /> JWT Authentication
-          </span>
-        </div>
+              {/* Miles Morales Mask Silhouette & Iconic Spray Spider */}
+              <div className="relative z-10 flex flex-col items-center justify-center p-6 text-center">
+                {/* Stylized Miles Spider Mask Eyes SVG */}
+                <div className="relative mb-4 w-44 h-28 flex items-center justify-center">
+                  <svg
+                    viewBox="0 0 200 120"
+                    className="w-full h-full filter drop-shadow-[0_0_12px_rgba(255,23,68,0.6)]"
+                    fill="none"
+                  >
+                    {/* Left Eye: Miles sharp angled lens */}
+                    <path
+                      d="M 25,35 Q 65,20 90,65 Q 60,75 25,35 Z"
+                      fill="#f5f5f7"
+                      stroke="#e62429"
+                      strokeWidth="5"
+                    />
+                    {/* Right Eye */}
+                    <path
+                      d="M 175,35 Q 135,20 110,65 Q 140,75 175,35 Z"
+                      fill="#f5f5f7"
+                      stroke="#e62429"
+                      strokeWidth="5"
+                    />
+                    {/* Eye inner glow accent */}
+                    <path d="M 35,38 Q 65,28 82,60" stroke="#ff1f3d" strokeWidth="2" fill="none" />
+                    <path d="M 165,38 Q 135,28 118,60" stroke="#ff1f3d" strokeWidth="2" fill="none" />
+                  </svg>
+                </div>
 
-        {/* CTA Buttons */}
-        <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 mb-12">
-          <button
-            onClick={() => scrollTo('projects')}
-            className="px-6 py-3 rounded bg-hawkins-red hover:bg-red-700 text-white font-mono text-xs sm:text-sm font-semibold tracking-wider transition-all shadow-hawkins-glow flex items-center gap-2"
-          >
-            EXPLORE CASE FILES
-            <ArrowDown className="w-4 h-4" />
-          </button>
+                {/* Stencil spray spider insignia */}
+                <div className="w-24 h-24 relative mb-2">
+                  <img
+                    src="/assets/spiderman/miles_spider_icon.svg"
+                    alt="Miles Morales Spider Spray Insignia"
+                    className="w-full h-full object-contain filter drop-shadow-[0_0_15px_rgba(230,36,41,0.7)]"
+                  />
+                </div>
 
-          <button
-            onClick={() => scrollTo('about')}
-            className="px-6 py-3 rounded bg-hawkins-surface hover:bg-hawkins-card border border-hawkins-border text-hawkins-text hover:text-hawkins-amber font-mono text-xs sm:text-sm tracking-wider transition-all"
-          >
-            PERSONNEL DOSSIER
-          </button>
+                {/* Comic Badge text */}
+                <div className="bg-void/90 border border-borderDark px-3 py-1 font-mono text-xs text-paper uppercase tracking-wider">
+                  TACTICAL DEV IDENTITY
+                </div>
+                <div className="mt-1 text-[11px] font-mono text-spider font-bold">
+                  MILES MORALES SUIT DESIGNATION
+                </div>
+              </div>
 
-          <a
-            href={personal.resumePdfPath || '/Aryan_FullStack_Resume.pdf'}
-            target="_blank"
-            rel="noopener noreferrer"
-            onClick={() => strangerAudio.playClickSound()}
-            className="px-5 py-3 rounded border border-hawkins-border hover:border-hawkins-red text-hawkins-text-muted hover:text-hawkins-text font-mono text-xs sm:text-sm tracking-wider transition-all flex items-center gap-2"
-          >
-            <FileText className="w-4 h-4 text-hawkins-red" />
-            DOWNLOAD DOSSIER
-          </a>
-        </div>
+              {/* Bottom Diagonal Tag */}
+              <div className="absolute bottom-2 right-2 bg-graffiti-yellow text-void font-comic text-sm px-2 py-0.5 rotate-[-3deg] border border-black shadow-comic-black font-bold">
+                SPRING &bull; REACT &bull; DOCKER
+              </div>
+            </div>
 
-        {/* Social / Investigation Coordinates */}
-        <div className="flex items-center gap-6 text-hawkins-text-dim">
-          <a
-            href={personal.githubUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-hawkins-red transition-colors flex items-center gap-1.5 text-xs font-mono"
-            aria-label="GitHub Profile"
-          >
-            <Github className="w-4 h-4" />
-            <span>GITHUB</span>
-          </a>
-
-          <span className="text-hawkins-border">•</span>
-
-          <a
-            href={personal.linkedinUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-hawkins-amber transition-colors flex items-center gap-1.5 text-xs font-mono"
-            aria-label="LinkedIn Profile"
-          >
-            <Linkedin className="w-4 h-4" />
-            <span>LINKEDIN</span>
-          </a>
-
-          <span className="text-hawkins-border">•</span>
-
-          <a
-            href={personal.leetcodeUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hover:text-hawkins-crt transition-colors flex items-center gap-1.5 text-xs font-mono"
-            aria-label="LeetCode Profile"
-          >
-            <Code2 className="w-4 h-4" />
-            <span>LEETCODE</span>
-          </a>
+            {/* Frame Footer Data */}
+            <div className="mt-3 flex items-center justify-between font-mono text-[10px] text-subtext">
+              <span>LAT: 21.8974° N &bull; LON: 83.3950° E</span>
+              <span className="text-spider">REST API ENGINE READY</span>
+            </div>
+          </div>
         </div>
       </div>
     </section>

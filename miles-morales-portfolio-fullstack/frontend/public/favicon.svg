@@ -1,7 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
-  <rect width="64" height="64" rx="12" fill="#0b0c10"/>
-  <circle cx="32" cy="32" r="24" stroke="#e61427" stroke-width="2" stroke-dasharray="6 4" opacity="0.8"/>
-  <path d="M22 18 L22 46 M30 18 L30 46" stroke="#ff9e1b" stroke-width="4" stroke-linecap="round"/>
-  <circle cx="44" cy="32" r="6" fill="#e61427"/>
-  <path d="M12 32 H20 M44 14 V22 M44 42 V50 M52 32 H60" stroke="#e61427" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none">
+  <rect width="100" height="100" rx="20" fill="#08080a"/>
+  <!-- Miles spray spider logo -->
+  <path d="M50 28 L45 38 L50 48 L55 38 Z" fill="#e62429" />
+  <path d="M50 48 L42 62 L50 78 L58 62 Z" fill="#e62429" />
+  <!-- Upper legs -->
+  <path d="M45 34 Q32 20 22 28 Q30 38 43 40" stroke="#e62429" stroke-width="4" stroke-linecap="round" fill="none" />
+  <path d="M55 34 Q68 20 78 28 Q70 38 57 40" stroke="#e62429" stroke-width="4" stroke-linecap="round" fill="none" />
+  <path d="M44 40 Q24 35 16 48 Q28 50 43 46" stroke="#e62429" stroke-width="3.5" stroke-linecap="round" fill="none" />
+  <path d="M56 40 Q76 35 84 48 Q72 50 57 46" stroke="#e62429" stroke-width="3.5" stroke-linecap="round" fill="none" />
+  <!-- Lower legs -->
+  <path d="M43 52 Q22 62 18 80 Q28 68 45 60" stroke="#e62429" stroke-width="3.5" stroke-linecap="round" fill="none" />
+  <path d="M57 52 Q78 62 82 80 Q72 68 55 60" stroke="#e62429" stroke-width="3.5" stroke-linecap="round" fill="none" />
+  <path d="M44 62 Q30 78 28 92 Q38 82 48 70" stroke="#e62429" stroke-width="3" stroke-linecap="round" fill="none" />
+  <path d="M56 62 Q70 78 72 92 Q62 82 52 70" stroke="#e62429" stroke-width="3" stroke-linecap="round" fill="none" />
 </svg>

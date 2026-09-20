@@ -23,15 +23,6 @@ public class ContactMessage {
     @Column(name = "submitted_at", nullable = false)
     private Instant submittedAt = Instant.now();
 
-    public ContactMessage() {}
-
-    public ContactMessage(String name, String email, String message) {
-        this.name = name;
-        this.email = email;
-        this.message = message;
-        this.submittedAt = Instant.now();
-    }
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

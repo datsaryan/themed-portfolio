@@ -29,18 +29,6 @@ public class Certification {
     @Column(name = "display_order", nullable = false)
     private Integer displayOrder;
 
-    public Certification() {}
-
-    public Certification(String title, String issuer, String dates, String link, String type, String description, Integer displayOrder) {
-        this.title = title;
-        this.issuer = issuer;
-        this.dates = dates;
-        this.link = link;
-        this.type = type;
-        this.description = description;
-        this.displayOrder = displayOrder;
-    }
-
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
 

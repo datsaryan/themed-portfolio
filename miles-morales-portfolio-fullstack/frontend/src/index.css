@@ -2,171 +2,319 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ---------------------------------------------------------------------------
+   THEME TOKENS
+   Every value is an "R G B" triplet so Tailwind can apply opacity modifiers
+   (bg-void/90 etc). Dark is the default; `html.light` swaps the palette to a
+   newsprint/comic-paper look. The web-shooter button in the navbar toggles
+   the class — see src/theme/themeEngine.ts.
+--------------------------------------------------------------------------- */
 :root {
-  /* HAWKINS / RIGHT SIDE UP: Analog 1986 laboratory palette */
-  --c-void: 14 17 23;            /* #0e1117 vintage terminal dark */
-  --c-surface: 22 27 34;         /* #161b22 lab console chassis */
-  --c-card: 28 33 42;            /* #1c212a case file background */
-  --c-border: 62 52 44;          /* dusty aged copper/brown */
-  --c-border-light: 92 78 66;    /* lighter worn border */
-  --c-text: 238 232 220;         /* aged cream paper text */
-  --c-text-muted: 178 166 150;   /* muted beige */
-  --c-text-dim: 124 114 100;     /* dark dusty brown text */
-  --c-red: 228 46 46;            /* Hawkins neon red */
-  --c-amber: 245 158 11;         /* vacuum tube amber */
-  --c-orange: 217 83 30;         /* radio dial orange */
-  --c-olive: 86 98 72;           /* weathered military olive */
-  --c-navy: 27 38 59;            /* desaturated deep navy */
-  --c-crt: 46 204 113;           /* oscilloscope green */
+  --c-void: 7 8 11;
+  --c-ink: 14 16 23;
+  --c-surface: 21 23 34;
+  --c-concrete: 34 37 51;
+  --c-border: 44 48 66;
+  --c-headline: 255 255 255;
+  --c-web: 243 244 248;
+  --c-paper: 232 230 223;
+  --c-subtext: 155 161 182;
+  --c-spider: 230 36 41;
+  --c-spider-bright: 255 31 61;
+  --c-spider-dark: 147 11 20;
+  --c-venom: 168 85 247;
+  --c-venom-electric: 192 38 211;
+  --c-venom-dark: 88 28 135;
+  --c-yellow: 255 214 0;
+  --c-cyan: 0 240 255;
+  --c-hard-shadow: 0 0 0;
+
+  /* Non-Tailwind decorative values */
+  --halftone-dot: rgba(255, 255, 255, 0.08);
+  --web-strand: rgba(255, 255, 255, 0.30);
+  --rain-strand: rgba(255, 255, 255, 0.30);
+  --speed-line: rgba(255, 255, 255, 0.02);
 }
 
-html.upsidedown {
-  /* THE UPSIDE DOWN: Corrupted, bruised, organic abyss */
-  --c-void: 8 5 12;              /* #08050c dimensional abyss */
-  --c-surface: 16 9 24;          /* bruised dark purple */
-  --c-card: 25 12 36;            /* corrupted organic node */
-  --c-border: 68 22 48;          /* deep bruised crimson border */
-  --c-border-light: 98 32 68;    /* organic tendon border */
-  --c-text: 220 210 224;         /* ash pale grey */
-  --c-text-muted: 156 142 164;   /* bruised lavender grey */
-  --c-text-dim: 104 90 112;      /* deep shadow */
-  --c-red: 198 22 42;            /* arterial crimson */
-  --c-amber: 162 38 64;          /* corrupted flesh hue */
-  --c-orange: 178 50 38;         /* decaying ember */
-  --c-olive: 18 58 54;           /* swamp tendril teal */
-  --c-navy: 12 26 38;            /* blackened trench blue */
-  --c-crt: 38 172 156;           /* bioluminescent spore teal */
+html.light {
+  --c-void: 236 232 222;
+  --c-ink: 248 245 237;
+  --c-surface: 255 253 247;
+  --c-concrete: 219 212 196;
+  --c-border: 176 166 146;
+  --c-headline: 16 16 20;
+  --c-web: 20 20 25;
+  --c-paper: 34 32 30;
+  --c-subtext: 95 89 78;
+  --c-spider: 199 22 30;
+  --c-spider-bright: 232 36 41;
+  --c-spider-dark: 124 8 16;
+  --c-venom: 124 43 194;
+  --c-venom-electric: 155 27 172;
+  --c-venom-dark: 71 22 110;
+  --c-yellow: 224 170 0;
+  --c-cyan: 0 132 152;
+  --c-hard-shadow: 24 20 16;
+
+  --halftone-dot: rgba(30, 25, 20, 0.10);
+  --web-strand: rgba(40, 32, 26, 0.35);
+  --rain-strand: rgba(60, 50, 40, 0.28);
+  --speed-line: rgba(40, 32, 26, 0.035);
 }
 
-/* Stranger Things Title Typography Glow */
-.stranger-title {
-  font-family: 'Cinzel Decorative', 'Cinzel', Georgia, serif;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgb(var(--c-text));
-  text-shadow:
-    0 0 10px rgba(228, 46, 46, 0.7),
-    0 0 25px rgba(228, 46, 46, 0.4),
-    0 0 45px rgba(217, 83, 30, 0.2);
+/* Palette swaps shouldn't strobe mid-transition */
+html {
+  transition: background-color 0.45s ease;
+  /* Fixed navbar is ~76px — keeps anchor targets from hiding underneath it */
+  scroll-padding-top: 5.5rem;
 }
 
-html.upsidedown .stranger-title {
-  text-shadow:
-    0 0 12px rgba(198, 22, 42, 0.8),
-    0 0 30px rgba(162, 38, 64, 0.5),
-    0 0 60px rgba(68, 22, 48, 0.4);
+body {
+  transition: background-color 0.45s ease, color 0.45s ease;
 }
 
-/* CRT Scanlines Overlay */
-.crt-overlay {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 999;
-  background: linear-gradient(
-    rgba(18, 16, 16, 0) 50%, 
-    rgba(0, 0, 0, 0.25) 50%
-  ), linear-gradient(
-    90deg,
-    rgba(255, 0, 0, 0.03),
-    rgba(0, 255, 0, 0.01),
-    rgba(0, 0, 255, 0.03)
-  );
-  background-size: 100% 3px, 6px 100%;
-  opacity: 0.65;
+/* ---------------------------------------------------------------------------
+   CURSOR
+   The native cursor is fully replaced by the reticle in CustomCursor.tsx.
+   Scoped to fine pointers so touch devices are untouched; forced-colors mode
+   always gets the OS cursor back.
+--------------------------------------------------------------------------- */
+@media (pointer: fine) {
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    cursor: none !important;
+  }
 }
 
-html.upsidedown .crt-overlay {
-  opacity: 0.85;
-  background: linear-gradient(
-    rgba(10, 4, 14, 0) 50%, 
-    rgba(20, 2, 8, 0.35) 50%
-  ), linear-gradient(
-    90deg,
-    rgba(198, 22, 42, 0.04),
-    rgba(0, 255, 200, 0.02),
-    rgba(120, 10, 60, 0.04)
-  );
-  background-size: 100% 4px, 4px 100%;
+@media (forced-colors: active) {
+  html,
+  body,
+  *,
+  *::before,
+  *::after {
+    cursor: auto !important;
+  }
 }
 
-/* Film Grain Texture */
-.film-grain {
-  position: fixed;
-  inset: 0;
-  pointer-events: none;
-  z-index: 998;
-  opacity: 0.04;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-}
-
-/* Classified Stamp Effect */
-.classified-stamp {
-  border: 2px solid rgb(var(--c-red));
-  color: rgb(var(--c-red));
-  text-transform: uppercase;
-  font-family: 'IBM Plex Mono', monospace;
-  font-weight: 700;
-  letter-spacing: 0.15em;
-  padding: 0.25rem 0.75rem;
-  display: inline-block;
-  transform: rotate(-3deg);
-  opacity: 0.9;
-  box-shadow: 0 0 10px rgba(228, 46, 46, 0.2);
-}
-
-/* Analog Meter / Terminal text */
-.terminal-text {
-  font-family: 'IBM Plex Mono', monospace;
-  letter-spacing: 0.05em;
-}
-
-/* Hawkins Case File Border */
-.case-file-border {
-  border: 1px solid rgb(var(--c-border));
-  background-color: rgb(var(--c-card));
-  position: relative;
-  transition: all 0.25s ease-in-out;
-}
-
-.case-file-border:hover {
-  border-color: rgb(var(--c-border-light));
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4), 0 0 15px rgba(var(--c-red), 0.15);
-}
-
-/* Tendril borders for Upside Down */
-html.upsidedown .case-file-border {
-  border-color: rgb(var(--c-border));
-  box-shadow: 0 4px 25px rgba(0, 0, 0, 0.6), inset 0 0 15px rgba(198, 22, 42, 0.08);
-}
-
-/* Custom Scrollbar */
+/* Custom Sleek Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
-
 ::-webkit-scrollbar-track {
   background: rgb(var(--c-void));
 }
-
 ::-webkit-scrollbar-thumb {
-  background: rgb(var(--c-border));
-  border-radius: 2px;
+  background: rgb(var(--c-concrete));
+  border-radius: 4px;
+  border: 1px solid rgb(var(--c-spider));
 }
-
 ::-webkit-scrollbar-thumb:hover {
-  background: rgb(var(--c-red));
+  background: rgb(var(--c-spider));
 }
 
-/* Reduced Motion Support */
+/* Comic halftone dot pattern */
+.bg-halftone-dots {
+  background-image: radial-gradient(var(--halftone-dot) 1.2px, transparent 1.2px);
+  background-size: 16px 16px;
+}
+
+.bg-halftone-red {
+  background-image: radial-gradient(rgb(var(--c-spider) / 0.15) 1.5px, transparent 1.5px);
+  background-size: 12px 12px;
+}
+
+.bg-halftone-purple {
+  background-image: radial-gradient(rgb(var(--c-venom) / 0.15) 1.5px, transparent 1.5px);
+  background-size: 12px 12px;
+}
+
+/* ---------------------------------------------------------------------------
+   SITE-WIDE WEB WEAVE
+   A tiled spider-web lattice laid behind everything at very low opacity.
+   Uses currentColor via the stroke variable so it inverts with the theme.
+--------------------------------------------------------------------------- */
+.bg-web-weave {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240' fill='none' stroke='%23ffffff' stroke-width='1'%3E%3Cpath d='M120 0 L120 240 M0 120 L240 120 M0 0 L240 240 M240 0 L0 240'/%3E%3Cpath d='M120 40 Q 160 60 200 40 M120 40 Q 80 60 40 40 M120 200 Q 160 180 200 200 M120 200 Q 80 180 40 200'/%3E%3Ccircle cx='120' cy='120' r='34'/%3E%3Ccircle cx='120' cy='120' r='68'/%3E%3Ccircle cx='120' cy='120' r='102'/%3E%3C/svg%3E");
+  background-size: 240px 240px;
+  background-repeat: repeat;
+}
+
+html.light .bg-web-weave {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240' viewBox='0 0 240 240' fill='none' stroke='%23231c14' stroke-width='1'%3E%3Cpath d='M120 0 L120 240 M0 120 L240 120 M0 0 L240 240 M240 0 L0 240'/%3E%3Cpath d='M120 40 Q 160 60 200 40 M120 40 Q 80 60 40 40 M120 200 Q 160 180 200 200 M120 200 Q 80 180 40 200'/%3E%3Ccircle cx='120' cy='120' r='34'/%3E%3Ccircle cx='120' cy='120' r='68'/%3E%3Ccircle cx='120' cy='120' r='102'/%3E%3C/svg%3E");
+}
+
+/* Comic diagonal slash borders */
+.comic-border {
+  border: 2px solid rgb(var(--c-border));
+  box-shadow: 4px 4px 0px rgb(var(--c-hard-shadow) / 0.8);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.comic-border:hover {
+  border-color: rgb(var(--c-spider));
+  box-shadow: 6px 6px 0px rgb(var(--c-spider));
+  transform: translate(-2px, -2px);
+}
+
+.comic-border-venom:hover {
+  border-color: rgb(var(--c-venom));
+  box-shadow: 6px 6px 0px rgb(var(--c-venom));
+  transform: translate(-2px, -2px);
+}
+
+/* Speed Lines Overlay */
+.comic-speed-lines {
+  background: repeating-linear-gradient(
+    90deg,
+    transparent,
+    transparent 48px,
+    var(--speed-line) 48px,
+    var(--speed-line) 50px
+  );
+}
+
+/* Chromatic Aberration Glitch Text Effect */
+.glitch-hover {
+  position: relative;
+  display: inline-block;
+}
+
+.glitch-hover:hover {
+  text-shadow: -2px 0 rgb(var(--c-spider-bright)), 2px 0 rgb(var(--c-cyan));
+  animation: glitch-anim 0.3s infinite;
+}
+
+@keyframes glitch-anim {
+  0% { transform: translate(0); }
+  20% { transform: translate(-1px, 1px); }
+  40% { transform: translate(-1px, -1px); }
+  60% { transform: translate(1px, 1px); }
+  80% { transform: translate(1px, -1px); }
+  100% { transform: translate(0); }
+}
+
+/* Rain Animation */
+@keyframes rain-fall {
+  0% { transform: translateY(-100%); }
+  100% { transform: translateY(100vh); }
+}
+
+.rain-drop {
+  position: absolute;
+  background: linear-gradient(transparent, var(--rain-strand));
+  width: 1px;
+  animation: rain-fall linear infinite;
+}
+
+/* Comic Panel Cut Corner */
+.comic-cut {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 16px) 0,
+    100% 16px,
+    100% 100%,
+    16px 100%,
+    0 calc(100% - 16px)
+  );
+}
+
+.comic-cut-lg {
+  clip-path: polygon(
+    0 0,
+    calc(100% - 24px) 0,
+    100% 24px,
+    100% 100%,
+    24px 100%,
+    0 calc(100% - 24px)
+  );
+}
+
+/* Web Shooting Burst Animation */
+@keyframes web-burst {
+  0% { opacity: 0; transform: scale(0.1) rotate(0deg); }
+  50% { opacity: 1; }
+  100% { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+.animate-web-burst {
+  animation: web-burst 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* Electric Venom Pulse */
+@keyframes venom-pulse {
+  0%, 100% {
+    opacity: 0.3;
+    box-shadow: 0 0 10px rgb(var(--c-venom) / 0.4);
+  }
+  50% {
+    opacity: 0.9;
+    box-shadow: 0 0 30px rgb(var(--c-venom) / 0.8), 0 0 60px rgb(var(--c-venom-electric) / 0.5);
+  }
+}
+
+.animate-venom-pulse {
+  animation: venom-pulse 1.8s infinite ease-in-out;
+}
+
+/* Street Graffiti Tag text */
+.graffiti-tag {
+  font-family: 'Bangers', cursive;
+  letter-spacing: 0.05em;
+  transform: rotate(-1.5deg);
+}
+
+/* High contrast accessibility focus states */
+a:focus-visible, button:focus-visible {
+  outline: 2px solid rgb(var(--c-spider));
+  outline-offset: 3px;
+}
+
+/* Impact burst left behind at the point a stretched Spider-Man is released */
+@keyframes web-impact-burst {
+  0% { transform: scale(0.15) rotate(0deg); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: scale(1.7) rotate(25deg); opacity: 0; }
+}
+
+.animate-web-impact-burst {
+  animation: web-impact-burst 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ---------------------------------------------------------------------------
+   WEB-SHOOTER THEME SPLAT
+   Fired by the navbar web shooter: a web splat expands from the button and
+   covers the screen while the palette swaps underneath it, then fades.
+--------------------------------------------------------------------------- */
+@keyframes web-splat {
+  0% { transform: scale(0.02); opacity: 0; }
+  12% { opacity: 1; }
+  55% { transform: scale(1); opacity: 1; }
+  100% { transform: scale(1.25); opacity: 0; }
+}
+
+.animate-web-splat {
+  animation: web-splat 0.85s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+@keyframes shooter-recoil {
+  0% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(3px) rotate(6deg); }
+  60% { transform: translateX(-1px) rotate(-2deg); }
+  100% { transform: translateX(0) rotate(0deg); }
+}
+
+.animate-shooter-recoil {
+  animation: shooter-recoil 0.35s ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, ::before, ::after {
     animation-duration: 0.01ms !important;
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
-  }
-  .crt-overlay {
-    opacity: 0.3;
   }
 }

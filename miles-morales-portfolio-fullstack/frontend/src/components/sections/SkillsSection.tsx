@@ -1,193 +1,134 @@
 import React, { useState } from 'react';
-import { SkillCategory, WorldMode } from '../../types/portfolio';
-import {
-  Terminal,
-  Server,
-  Layout,
-  Database,
-  Wrench,
-  ShieldCheck,
-  Cpu,
-  ArrowRight,
-  Radio,
-  CheckCircle2
-} from 'lucide-react';
-import { strangerAudio } from '../../audio/soundEngine';
+import { useResumeData } from '../../data/useResumeData';
+import { Cpu, Server, Layout, Database, Wrench, ShieldCheck, Terminal, CheckCircle2 } from 'lucide-react';
+import { sound } from '../../audio/soundEngine';
 
-interface SkillsSectionProps {
-  skills: SkillCategory[];
-  world: WorldMode;
-}
-
-export const SkillsSection: React.FC<SkillsSectionProps> = ({ skills, world }) => {
-  const [selectedCategoryId, setSelectedCategoryId] = useState<number>(skills[0]?.id || 1);
+export const SkillsSection: React.FC = () => {
+  const { skillCategories } = useResumeData();
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [rippleCategory, setRippleCategory] = useState<string | null>(null);
 
   const getIcon = (iconName: string) => {
-    switch (iconName.toLowerCase()) {
-      case 'terminal': return <Terminal className="w-4 h-4" />;
-      case 'server': return <Server className="w-4 h-4" />;
-      case 'layout': return <Layout className="w-4 h-4" />;
-      case 'database': return <Database className="w-4 h-4" />;
-      case 'wrench': return <Wrench className="w-4 h-4" />;
-      case 'shieldcheck': return <ShieldCheck className="w-4 h-4" />;
-      case 'cpu': return <Cpu className="w-4 h-4" />;
-      default: return <Radio className="w-4 h-4" />;
+    switch (iconName) {
+      case 'Terminal':
+        return <Terminal className="w-5 h-5 text-spider" />;
+      case 'Server':
+        return <Server className="w-5 h-5 text-venom-purple" />;
+      case 'Layout':
+        return <Layout className="w-5 h-5 text-graffiti-yellow" />;
+      case 'Database':
+        return <Database className="w-5 h-5 text-graffiti-cyan" />;
+      case 'Wrench':
+        return <Wrench className="w-5 h-5 text-spider-bright" />;
+      case 'ShieldCheck':
+        return <ShieldCheck className="w-5 h-5 text-green-400" />;
+      default:
+        return <Cpu className="w-5 h-5 text-paper" />;
     }
   };
 
-  const selectedCategory = skills.find((s) => s.id === selectedCategoryId) || skills[0];
+  const handleCategoryClick = (category: string) => {
+    const isSelected = selectedCategory === category;
+    // Ripple flash
+    setRippleCategory(category);
+    setTimeout(() => setRippleCategory(null), 420);
+    // Sound: click + thwip combo
+    sound.playClick();
+    sound.playThwip();
+    setSelectedCategory(isSelected ? null : category);
+  };
 
   return (
-    <section id="skills" className="py-20 px-4 sm:px-6 relative bg-hawkins-void/60">
-      <div className="max-w-6xl mx-auto">
-        {/* Section Header */}
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between mb-10 pb-4 border-b border-hawkins-border">
-          <div>
-            <div className="text-xs font-mono tracking-widest text-hawkins-amber uppercase font-semibold mb-1 flex items-center gap-2">
-              <Radio className="w-4 h-4 text-hawkins-red" />
-              SECTION 02 // TECHNICAL ARSENAL
-            </div>
-            <h2 className="text-3xl sm:text-4xl font-title text-hawkins-text tracking-wide">
-              HAWKINS LABORATORY EQUIPMENT BOARD
-            </h2>
-          </div>
-          <div className="mt-3 sm:mt-0 text-xs font-mono text-hawkins-text-dim">
-            SYSTEM STATUS: ALL CHANNELS ENCRYPTED
-          </div>
+    <section id="skills" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
+      {/* Section Header */}
+      <div className="mb-12">
+        <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
+          <Cpu className="w-4 h-4" />
+          <span>SUIT MODULES // 02</span>
+          <span className="text-borderDark">————</span>
+          <span className="text-subtext">TECHNICAL CAPABILITIES</span>
         </div>
+        <h2 className="font-display text-4xl sm:text-6xl text-headline uppercase tracking-tight flex items-center gap-3">
+          <span>THE SUIT</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-spider via-venom-purple to-graffiti-yellow">
+            SYSTEMS
+          </span>
+        </h2>
+        <p className="text-sm sm:text-base text-subtext mt-2 font-mono">
+          // ZERO ARBITRARY PERCENTAGES. RIGOROUS SKILLS EXTRACTED DIRECTLY FROM VERIFIED PRODUCTION WORK.
+        </p>
+      </div>
 
-        {/* FULL STACK ARCHITECTURAL FLOW BANNER */}
-        <div className="mb-10 p-5 rounded-lg bg-hawkins-card border border-hawkins-border/90 shadow-case-file">
-          <div className="text-[11px] font-mono text-hawkins-text-dim uppercase tracking-wider mb-3">
-            VERIFIED FULL-STACK PIPELINE ARCHITECTURE:
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
-            {/* Step 1 */}
-            <div className="p-3 bg-hawkins-surface border border-hawkins-border/70 rounded flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono text-hawkins-amber">01 // CLIENT TIER</span>
-                <Layout className="w-3.5 h-3.5 text-hawkins-amber" />
-              </div>
-              <span className="text-sm font-mono font-bold text-hawkins-text">React.js + TypeScript</span>
-              <span className="text-[11px] text-hawkins-text-muted mt-0.5">HTML5 • CSS3 • Tailwind</span>
-            </div>
+      {/* Skills Matrix Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {skillCategories.map((cat) => {
+          const isSelected = selectedCategory === cat.category;
+          const isRippling = rippleCategory === cat.category;
+          return (
+            <div
+              key={cat.category}
+              onClick={() => handleCategoryClick(cat.category)}
+              className={`relative bg-surface/90 border p-6 comic-border cursor-pointer transition-all overflow-hidden ${
+                isSelected
+                  ? 'border-spider shadow-comic-hard bg-surface'
+                  : isRippling
+                  ? 'border-spider shadow-[0_0_20px_3px_rgba(230,36,41,0.5)]'
+                  : 'border-borderDark hover:border-spider/60'
+              }`}
+            >
+              {/* Radial spider-red ripple flash on click */}
+              <div
+                className={`absolute inset-0 pointer-events-none transition-opacity duration-300 ${
+                  isRippling ? 'opacity-100' : 'opacity-0'
+                }`}
+                style={{
+                  background:
+                    'radial-gradient(circle at center, rgba(230,36,41,0.22) 0%, rgba(230,36,41,0.06) 55%, transparent 80%)',
+                }}
+              />
 
-            {/* Step 2 */}
-            <div className="p-3 bg-hawkins-surface border border-hawkins-border/70 rounded flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono text-hawkins-red">02 // GATEWAY TIER</span>
-                <Radio className="w-3.5 h-3.5 text-hawkins-red" />
-              </div>
-              <span className="text-sm font-mono font-bold text-hawkins-text">REST API + JWT Auth</span>
-              <span className="text-[11px] text-hawkins-text-muted mt-0.5">RBAC • Stateless Tokens</span>
-            </div>
-
-            {/* Step 3 */}
-            <div className="p-3 bg-hawkins-surface border border-hawkins-border/70 rounded flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono text-hawkins-amber">03 // SERVICE TIER</span>
-                <Server className="w-3.5 h-3.5 text-hawkins-amber" />
-              </div>
-              <span className="text-sm font-mono font-bold text-hawkins-text">Java 21 + Spring Boot</span>
-              <span className="text-[11px] text-hawkins-text-muted mt-0.5">Layered • JPA • Flyway</span>
-            </div>
-
-            {/* Step 4 */}
-            <div className="p-3 bg-hawkins-surface border border-hawkins-border/70 rounded flex flex-col justify-between">
-              <div className="flex items-center justify-between mb-1">
-                <span className="text-[10px] font-mono text-hawkins-crt">04 // DATA TIER</span>
-                <Database className="w-3.5 h-3.5 text-hawkins-crt" />
-              </div>
-              <span className="text-sm font-mono font-bold text-hawkins-text">SQL / PostgreSQL</span>
-              <span className="text-[11px] text-hawkins-text-muted mt-0.5">MySQL • Schema Migrations</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Categories Tab Navigation */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Category List */}
-          <div className="space-y-2">
-            {skills.map((cat) => {
-              const isSelected = cat.id === selectedCategory?.id;
-              return (
-                <button
-                  key={cat.id}
-                  onClick={() => {
-                    strangerAudio.playClickSound();
-                    setSelectedCategoryId(cat.id);
-                  }}
-                  className={`w-full text-left p-3.5 rounded border transition-all flex items-center justify-between group ${
-                    isSelected
-                      ? 'bg-hawkins-card border-hawkins-red text-hawkins-text shadow-hawkins-glow'
-                      : 'bg-hawkins-surface/60 border-hawkins-border text-hawkins-text-muted hover:border-hawkins-border-light hover:text-hawkins-text'
-                  }`}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className={isSelected ? 'text-hawkins-red' : 'text-hawkins-text-dim group-hover:text-hawkins-amber'}>
-                      {getIcon(cat.icon)}
-                    </span>
-                    <div>
-                      <div className="text-xs font-mono font-semibold">{cat.category}</div>
-                      <div className="text-[10px] font-mono text-hawkins-text-dim uppercase tracking-wider">
-                        {cat.suitModule || 'ACTIVE MODULE'}
-                      </div>
-                    </div>
-                  </div>
-                  <ArrowRight className={`w-3.5 h-3.5 transition-transform ${isSelected ? 'text-hawkins-red translate-x-1' : 'opacity-0'}`} />
-                </button>
-              );
-            })}
-          </div>
-
-          {/* Detailed Arsenal Display */}
-          {selectedCategory && (
-            <div className="lg:col-span-2 case-file-border rounded-lg p-6 sm:p-8 bg-hawkins-card/90 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between pb-4 border-b border-hawkins-border mb-6">
-                  <div>
-                    <span className="text-[10px] font-mono text-hawkins-amber uppercase tracking-widest">
-                      {selectedCategory.suitModule}
-                    </span>
-                    <h3 className="text-2xl font-title text-hawkins-text tracking-wide mt-1">
-                      {selectedCategory.category}
-                    </h3>
-                  </div>
-                  <div className="p-2.5 rounded bg-hawkins-surface border border-hawkins-border text-hawkins-red">
-                    {getIcon(selectedCategory.icon)}
-                  </div>
-                </div>
-
-                <p className="text-sm text-hawkins-text-muted font-sans leading-relaxed mb-6">
-                  {selectedCategory.description}
-                </p>
-
-                {/* Skills Grid */}
-                <div>
-                  <span className="text-xs font-mono text-hawkins-text-dim uppercase tracking-wider block mb-3">
-                    ACTIVE WEAPONS &amp; CAPABILITIES:
+              {/* Top Module Tape */}
+              <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-4">
+                <div className="flex items-center gap-2">
+                  {getIcon(cat.icon)}
+                  <span className="font-mono text-xs font-bold text-headline uppercase tracking-wider">
+                    {cat.category}
                   </span>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                    {selectedCategory.skills.map((skill, idx) => (
-                      <div
-                        key={idx}
-                        className="p-3 rounded bg-hawkins-surface border border-hawkins-border flex items-center gap-2 hover:border-hawkins-red/60 transition-colors"
-                      >
-                        <CheckCircle2 className="w-3.5 h-3.5 text-hawkins-crt shrink-0" />
-                        <span className="text-xs font-mono text-hawkins-text font-medium">{skill}</span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
+                <span className="text-[10px] font-mono text-subtext bg-ink px-2 py-0.5 border border-borderDark">
+                  {cat.suitModule}
+                </span>
               </div>
 
-              <div className="mt-8 pt-4 border-t border-hawkins-border/60 flex items-center justify-between text-[11px] font-mono text-hawkins-text-dim">
-                <span>CHANNEL FREQUENCY: OPTIMAL</span>
-                <span>SECURITY LEVEL: SECRET</span>
+              {/* Description */}
+              <p className="text-xs font-sans text-subtext mb-5 leading-relaxed">
+                {cat.description}
+              </p>
+
+              {/* Skills Tags / Suit Nodes */}
+              <div className="flex flex-wrap gap-2">
+                {cat.skills.map((skill) => (
+                  <span
+                    key={skill}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-ink text-paper font-mono text-xs font-medium border border-borderDark/80 hover:border-spider hover:text-headline transition-colors"
+                  >
+                    <span className="w-1.5 h-1.5 rounded-full bg-spider" />
+                    <span>{skill}</span>
+                  </span>
+                ))}
+              </div>
+
+              {/* Bottom Telemetry Status */}
+              <div className="mt-5 pt-3 border-t border-borderDark/40 flex items-center justify-between text-[10px] font-mono text-subtext">
+                <span className="flex items-center gap-1">
+                  <CheckCircle2 className="w-3 h-3 text-spider" />
+                  VERIFIED IN RESUME
+                </span>
+                <span className="text-spider font-bold">STATUS: DEPLOYABLE</span>
               </div>
             </div>
-          )}
-        </div>
+          );
+        })}
       </div>
     </section>
   );
