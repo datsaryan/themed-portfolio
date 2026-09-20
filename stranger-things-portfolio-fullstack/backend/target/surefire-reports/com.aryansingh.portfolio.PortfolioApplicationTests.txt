@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.aryansingh.portfolio.PortfolioApplicationTests
+-------------------------------------------------------------------------------
+Tests run: 8, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 3.131 s -- in com.aryansingh.portfolio.PortfolioApplicationTests
