@@ -28,16 +28,24 @@ export interface ContactPayload {
 
 export async function submitContactMessage(payload: ContactPayload): Promise<boolean> {
   if (!API_BASE) return false;
+  // Cap how long the visitor waits before we fall back to the mailto flow.
+  // A free-tier backend cold start or a network hiccup should never leave
+  // the send button hanging indefinitely.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
   try {
     const res = await fetch(`${API_BASE}/api/contact`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
+      signal: controller.signal,
     });
     return res.ok;
   } catch (err) {
     console.warn('[api] POST /api/contact failed', err);
     return false;
+  } finally {
+    clearTimeout(timeout);
   }
 }
 

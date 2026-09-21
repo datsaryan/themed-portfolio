@@ -1,7 +1,19 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { motion, useScroll, useTransform, useReducedMotion } from 'motion/react';
 import { useResumeData } from '../../data/useResumeData';
 import { sound, SongInfo, BGM_TRACK } from '../../audio/soundEngine';
 import { ArrowDown, FileText, Send, Radio, Terminal, Zap, Headphones, Play, Pause } from 'lucide-react';
+
+// Staggered mount-in for the hero copy — fires once on load, not on scroll,
+// since the hero is visible immediately.
+const heroStagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.09, delayChildren: 0.1 } },
+};
+const heroItem = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.55, ease: [0.16, 1, 0.3, 1] as const } },
+};
 
 interface HeroSectionProps {
   onTriggerVenom: () => void;
@@ -10,6 +22,13 @@ interface HeroSectionProps {
 export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
   const { personal } = useResumeData();
   const [audioState, setAudioState] = useState(sound.getState());
+  const prefersReducedMotion = useReducedMotion();
+
+  // Subtle parallax on the hero art panel as the visitor starts scrolling away.
+  const heroRef = useRef<HTMLElement>(null);
+  const { scrollYProgress } = useScroll({ target: heroRef, offset: ['start start', 'end start'] });
+  const artY = useTransform(scrollYProgress, [0, 1], [0, prefersReducedMotion ? 0 : 90]);
+  const artRotate = useTransform(scrollYProgress, [0, 1], [0, prefersReducedMotion ? 0 : 3]);
 
   useEffect(() => {
     const unsub = sound.subscribe((st: { isMuted: boolean; volume: number; isPlaying: boolean; song: SongInfo; usingFile: boolean }) => setAudioState(st));
@@ -29,7 +48,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center justify-center pt-24 pb-16 px-4 sm:px-6 overflow-hidden">
+    <section ref={heroRef} className="relative min-h-screen flex items-center justify-center pt-24 pb-16 px-4 sm:px-6 overflow-hidden">
       {/* Background Spider-Web Stencil & Graffiti Watermark */}
       <div className="absolute inset-0 flex items-center justify-center pointer-events-none select-none opacity-5">
         <span className="font-comic text-[22vw] text-spider tracking-tighter uppercase transform -rotate-6">
@@ -39,9 +58,14 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
 
       <div className="max-w-7xl mx-auto w-full grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
         {/* Left Column: Comic Narrative & Typography */}
-        <div className="lg:col-span-7 flex flex-col items-start space-y-6">
+        <motion.div
+          className="lg:col-span-7 flex flex-col items-start space-y-6"
+          variants={heroStagger}
+          initial={prefersReducedMotion ? undefined : 'hidden'}
+          animate={prefersReducedMotion ? undefined : 'show'}
+        >
           {/* Comic Label Pill & BGM Walkman Pill */}
-          <div className="flex flex-wrap items-center gap-2">
+          <motion.div variants={heroItem} className="flex flex-wrap items-center gap-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-spider text-white font-mono text-xs font-bold uppercase tracking-wider shadow-comic-black border border-white/20">
               <Radio className="w-3 h-3 animate-pulse" />
               EARTH-1610 TRANSMISSION
@@ -49,16 +73,16 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
             <span className="px-2.5 py-1 bg-surface border border-borderDark text-subtext font-mono text-xs">
               SECTOR: WEB ARCHITECTURE
             </span>
-          </div>
+          </motion.div>
 
           {/* Subtitle / Catchphrase */}
-          <div className="font-mono text-xs sm:text-sm text-spider font-bold tracking-widest uppercase flex items-center gap-2">
+          <motion.div variants={heroItem} className="font-mono text-xs sm:text-sm text-spider font-bold tracking-widest uppercase flex items-center gap-2">
             <span className="inline-block w-8 h-[2px] bg-spider" />
             {personal.tagline}
-          </div>
+          </motion.div>
 
           {/* Main Giant Display Typography */}
-          <div className="space-y-1">
+          <motion.div variants={heroItem} className="space-y-1">
             <h1 className="font-display text-5xl sm:text-7xl lg:text-8xl tracking-tight text-headline uppercase leading-[0.9] select-none">
               <span className="block text-paper">ARYAN</span>
               <span className="block text-transparent bg-clip-text bg-gradient-to-r from-spider via-spider-bright to-venom-purple glitch-hover">
@@ -71,10 +95,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
               <span className="text-subtext/50">|</span>
               <span className="text-xs text-subtext">JAVA // SPRING BOOT // REACT // POSTGRESQL</span>
             </div>
-          </div>
+          </motion.div>
 
           {/* Authentic Resume Summary Paragraph */}
-          <div className="relative p-4 sm:p-5 bg-surface/80 border-l-4 border-spider border-y border-r border-borderDark/60 comic-cut">
+          <motion.div variants={heroItem} className="relative p-4 sm:p-5 bg-surface/80 border-l-4 border-spider border-y border-r border-borderDark/60 comic-cut">
             <div className="text-[10px] font-mono text-subtext/70 uppercase tracking-widest mb-1.5 flex items-center justify-between">
               <span>// OPERATIVE SPECIFICATION</span>
               <span>B.TECH CSE &bull; OP JINDAL UNIV</span>
@@ -82,10 +106,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
             <p className="text-sm sm:text-base text-paper/90 leading-relaxed font-sans">
               {personal.summary}
             </p>
-          </div>
+          </motion.div>
 
           {/* Action CTAs */}
-          <div className="flex flex-wrap items-center gap-4 pt-2 w-full sm:w-auto">
+          <motion.div variants={heroItem} className="flex flex-wrap items-center gap-4 pt-2 w-full sm:w-auto">
             <button
               onClick={scrollToMissions}
               className="w-full sm:w-auto flex items-center justify-center gap-3 px-6 py-3.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-widest transition-all shadow-comic-black border border-white/20 hover:translate-x-0.5 hover:-translate-y-0.5"
@@ -112,10 +136,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
               <Send className="w-3.5 h-3.5" />
               <span>TRANSMIT SIGNAL</span>
             </button>
-          </div>
+          </motion.div>
 
           {/* Miles Morales Walkman Soundtrack Player */}
-          <div className="w-full">
+          <motion.div variants={heroItem} className="w-full">
             <button
               onClick={() => sound.toggleSong()}
               className="w-full flex items-center justify-between p-3 bg-surface/90 hover:bg-ink border border-spider/60 hover:border-spider text-headline transition-all shadow-comic-black group"
@@ -153,10 +177,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
                 )}
               </div>
             </button>
-          </div>
+          </motion.div>
 
           {/* Live Telemetry / Suit Status bar */}
-          <div className="grid grid-cols-3 gap-3 pt-4 border-t border-borderDark/60 w-full font-mono text-[11px]">
+          <motion.div variants={heroItem} className="grid grid-cols-3 gap-3 pt-4 border-t border-borderDark/60 w-full font-mono text-[11px]">
             <div className="flex flex-col">
               <span className="text-subtext/70">OPERATIONAL STATUS</span>
               <span className="text-headline font-bold flex items-center gap-1.5 mt-0.5">
@@ -180,13 +204,19 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
                 REST &bull; CLOUD &bull; DSA
               </span>
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
 
         {/* Right Column: Miles Morales Themed Hero Visual Art Frame */}
         <div className="lg:col-span-5 flex justify-center relative">
-          {/* Angled Comic Panel Frame */}
-          <div className="relative w-full max-w-md bg-ink border-2 border-spider shadow-comic-hard p-4 comic-cut">
+          {/* Angled Comic Panel Frame — drifts gently as you start to scroll */}
+          <motion.div
+            style={prefersReducedMotion ? undefined : { y: artY, rotate: artRotate }}
+            initial={prefersReducedMotion ? undefined : { opacity: 0, scale: 0.94 }}
+            animate={prefersReducedMotion ? undefined : { opacity: 1, scale: 1 }}
+            transition={{ duration: 0.7, delay: 0.15, ease: [0.16, 1, 0.3, 1] }}
+            className="relative w-full max-w-md bg-ink border-2 border-spider shadow-comic-hard p-4 comic-cut"
+          >
             {/* Top Comic Header Tape */}
             <div className="flex items-center justify-between border-b border-borderDark pb-2 mb-3 font-mono text-[10px] text-subtext">
               <span className="text-spider font-bold tracking-widest">// SUIT RECON HUD</span>
@@ -278,7 +308,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({ onTriggerVenom }) => {
               <span>LAT: 21.8974° N &bull; LON: 83.3950° E</span>
               <span className="text-spider">REST API ENGINE READY</span>
             </div>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

@@ -2,6 +2,7 @@ import React from 'react';
 import { useResumeData } from '../../data/useResumeData';
 import { User, GraduationCap, BookOpen, Terminal, Shield } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import { Reveal, RevealStagger, RevealItem } from '../effects/ScrollReveal';
 
 export const AboutSection: React.FC = () => {
   const { personal, education } = useResumeData();
@@ -9,7 +10,7 @@ export const AboutSection: React.FC = () => {
   return (
     <section id="about" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
       {/* Section Header */}
-      <div className="mb-12">
+      <Reveal className="mb-12">
         <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
           <User className="w-4 h-4" />
           <span>DOSSIER // 01</span>
@@ -22,12 +23,12 @@ export const AboutSection: React.FC = () => {
             THE MASK
           </span>
         </h2>
-      </div>
+      </Reveal>
 
       {/* Comic Panel Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         {/* Main Panel 1: Origin Philosophy & Engineering Mindset */}
-        <div className="lg:col-span-7 bg-surface/90 border border-borderDark comic-border p-6 sm:p-8 relative overflow-hidden">
+        <Reveal direction="left" className="lg:col-span-7 bg-surface/90 border border-borderDark comic-border p-6 sm:p-8 relative overflow-hidden">
           {/* Halftone texture inside */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-halftone-red opacity-15 pointer-events-none" />
 
@@ -54,24 +55,24 @@ export const AboutSection: React.FC = () => {
           </div>
 
           {/* Key Traits Chips */}
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 mt-6 border-t border-borderDark/70">
-            <div className="bg-ink/70 border border-borderDark p-3">
+          <RevealStagger className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-6 mt-6 border-t border-borderDark/70">
+            <RevealItem className="bg-ink/70 border border-borderDark p-3">
               <div className="font-mono text-xs text-spider font-bold uppercase">Multi-Tenancy</div>
               <div className="text-[11px] text-subtext mt-1">Tenant-isolated schemas & data boundaries</div>
-            </div>
-            <div className="bg-ink/70 border border-borderDark p-3">
+            </RevealItem>
+            <RevealItem className="bg-ink/70 border border-borderDark p-3">
               <div className="font-mono text-xs text-venom-purple font-bold uppercase">Security & Auth</div>
               <div className="text-[11px] text-subtext mt-1">JWT token pipelines & granular RBAC</div>
-            </div>
-            <div className="bg-ink/70 border border-borderDark p-3">
+            </RevealItem>
+            <RevealItem className="bg-ink/70 border border-borderDark p-3">
               <div className="font-mono text-xs text-graffiti-yellow font-bold uppercase">Rigorous QA</div>
               <div className="text-[11px] text-subtext mt-1">80%+ test coverage with JUnit & Mockito</div>
-            </div>
-          </div>
-        </div>
+            </RevealItem>
+          </RevealStagger>
+        </Reveal>
 
         {/* Side Panel 2: Academic Origin Arc & Coursework */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
+        <Reveal direction="right" delay={0.1} className="lg:col-span-5 flex flex-col gap-6">
           {/* Education Card */}
           <div className="bg-ink/90 border border-spider/50 comic-border p-6 relative">
             <div className="flex items-center gap-2 mb-3">
@@ -137,7 +138,7 @@ export const AboutSection: React.FC = () => {
               </a>
             </div>
           </div>
-        </div>
+        </Reveal>
       </div>
     </section>
   );

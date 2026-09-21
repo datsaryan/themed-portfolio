@@ -1,15 +1,25 @@
-import React from 'react';
+import React, { useRef } from 'react';
+import { motion, useScroll, useSpring } from 'motion/react';
 import { useResumeData } from '../../data/useResumeData';
 import { Award, ExternalLink, Calendar, CheckCircle2, BookmarkCheck, Sparkles, MapPin } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import { Reveal, RevealStagger, RevealItem } from '../effects/ScrollReveal';
 
 export const TimelineSection: React.FC = () => {
   const { education, credentials } = useResumeData();
+  const timelineRef = useRef<HTMLDivElement>(null);
+  // Tracks scroll progress through the credentials list so the connecting
+  // spider-line "draws" itself downward as the visitor scrolls past it.
+  const { scrollYProgress } = useScroll({
+    target: timelineRef,
+    offset: ['start 0.8', 'end 0.6'],
+  });
+  const lineProgress = useSpring(scrollYProgress, { stiffness: 90, damping: 24, restDelta: 0.001 });
 
   return (
     <section id="timeline" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
       {/* Section Header */}
-      <div className="mb-12">
+      <Reveal className="mb-12">
         <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
           <Award className="w-4 h-4" />
           <span>ORIGIN & CREDENTIALS // 04</span>
@@ -25,11 +35,11 @@ export const TimelineSection: React.FC = () => {
         <p className="text-sm sm:text-base text-subtext mt-2 font-mono">
           // CHRONICLED OPERATIONAL TIMELINE & VERIFIED INSTITUTIONAL RECORDS
         </p>
-      </div>
+      </Reveal>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Education & Training Arc */}
-        <div className="lg:col-span-5 space-y-6">
+        <Reveal direction="left" className="lg:col-span-5 space-y-6">
           <div className="bg-surface/90 border border-borderDark comic-border p-6 relative">
             <div className="flex items-center gap-2 mb-4 font-mono text-xs text-spider font-bold uppercase">
               <Sparkles className="w-4 h-4" />
@@ -66,16 +76,24 @@ export const TimelineSection: React.FC = () => {
               </div>
             </div>
           </div>
-        </div>
+        </Reveal>
 
         {/* Right Column: Experience, Workshops & Certifications Timeline */}
         <div className="lg:col-span-7">
-          <div className="relative pl-6 sm:pl-8 space-y-6 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-[2px] before:bg-gradient-to-b before:from-spider before:via-venom-purple before:to-borderDark">
-            {credentials.map((item, idx) => (
-              <div
-                key={idx}
-                className="relative bg-surface/80 border border-borderDark comic-border p-5 sm:p-6 transition-all hover:border-spider/80"
-              >
+          <div ref={timelineRef} className="relative pl-6 sm:pl-8 space-y-6">
+            {/* Static faint track + spider-line that draws itself in on scroll */}
+            <div className="absolute left-2 top-2 bottom-2 w-[2px] bg-borderDark/40" />
+            <motion.div
+              className="absolute left-2 top-2 w-[2px] bg-gradient-to-b from-spider via-venom-purple to-graffiti-yellow origin-top"
+              style={{ scaleY: lineProgress, bottom: '0.5rem' }}
+            />
+
+            <RevealStagger>
+              {credentials.map((item, idx) => (
+                <RevealItem
+                  key={idx}
+                  className="relative bg-surface/80 border border-borderDark comic-border p-5 sm:p-6 transition-all hover:border-spider/80 mb-6 last:mb-0"
+                >
                 {/* Spider Node Marker on timeline */}
                 <div className="absolute -left-[27px] sm:-left-[35px] top-6 w-4 h-4 bg-void border-2 border-spider rounded-full flex items-center justify-center">
                   <div className="w-1.5 h-1.5 bg-spider rounded-full" />
@@ -123,8 +141,9 @@ export const TimelineSection: React.FC = () => {
                     </a>
                   </div>
                 )}
-              </div>
-            ))}
+                </RevealItem>
+              ))}
+            </RevealStagger>
           </div>
         </div>
       </div>

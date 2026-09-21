@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useResumeData } from '../../data/useResumeData';
 import { Cpu, Server, Layout, Database, Wrench, ShieldCheck, Terminal, CheckCircle2 } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import { Reveal, RevealStagger, RevealItem } from '../effects/ScrollReveal';
 
 export const SkillsSection: React.FC = () => {
   const { skillCategories } = useResumeData();
@@ -41,7 +42,7 @@ export const SkillsSection: React.FC = () => {
   return (
     <section id="skills" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
       {/* Section Header */}
-      <div className="mb-12">
+      <Reveal className="mb-12">
         <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
           <Cpu className="w-4 h-4" />
           <span>SUIT MODULES // 02</span>
@@ -57,15 +58,15 @@ export const SkillsSection: React.FC = () => {
         <p className="text-sm sm:text-base text-subtext mt-2 font-mono">
           // ZERO ARBITRARY PERCENTAGES. RIGOROUS SKILLS EXTRACTED DIRECTLY FROM VERIFIED PRODUCTION WORK.
         </p>
-      </div>
+      </Reveal>
 
       {/* Skills Matrix Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <RevealStagger className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {skillCategories.map((cat) => {
           const isSelected = selectedCategory === cat.category;
           const isRippling = rippleCategory === cat.category;
           return (
-            <div
+            <RevealItem
               key={cat.category}
               onClick={() => handleCategoryClick(cat.category)}
               className={`relative bg-surface/90 border p-6 comic-border cursor-pointer transition-all overflow-hidden ${
@@ -126,10 +127,10 @@ export const SkillsSection: React.FC = () => {
                 </span>
                 <span className="text-spider font-bold">STATUS: DEPLOYABLE</span>
               </div>
-            </div>
+            </RevealItem>
           );
         })}
-      </div>
+      </RevealStagger>
     </section>
   );
 };

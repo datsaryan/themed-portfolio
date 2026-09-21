@@ -3,9 +3,11 @@ package com.aryansingh.portfolio.service;
 import com.aryansingh.portfolio.model.ContactMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
 /**
@@ -18,36 +20,58 @@ import org.springframework.stereotype.Service;
  * send throws for any reason, this logs and returns — it never lets an email
  * problem turn into a failed contact-form submission. The message is always
  * safely persisted to the database by ContactController regardless.
+ *
+ * sendContactNotification runs on Spring's async executor (@Async, enabled by
+ * @EnableAsync on PortfolioApplication) instead of the request thread. SMTP
+ * relays (Gmail's included) can take several seconds — or hit the 5s
+ * connect/read/write timeouts configured in MailConfig — and previously that
+ * whole wait sat inside ContactController.submit() before it could return a
+ * response, which is why the "send" button on the site would sometimes feel
+ * stuck. Now the HTTP response goes back the moment the message is saved to
+ * the database, and the email is sent in the background.
  */
 @Service
 public class EmailService {
 
     private static final Logger log = LoggerFactory.getLogger(EmailService.class);
 
-    private final JavaMailSender mailSender;
+    // ObjectProvider, not a direct JavaMailSender dependency: Spring Boot only
+    // registers a JavaMailSender bean when spring.mail.host is set, so a hard
+    // constructor dependency on JavaMailSender would fail app startup
+    // whenever SMTP isn't configured. ObjectProvider defers the lookup until
+    // send time, so this service (and the whole app) boots fine either way.
+    private final ObjectProvider<JavaMailSender> mailSenderProvider;
     private final String smtpHost;
     private final String toEmail;
     private final String fromEmail;
 
     public EmailService(
-            JavaMailSender mailSender,
+            ObjectProvider<JavaMailSender> mailSenderProvider,
             @Value("${spring.mail.host:}") String smtpHost,
-            @Value("${app.notify.to-email}") String toEmail,
+            @Value("${app.notify.to-email:}") String toEmail,
             @Value("${app.notify.from-email:}") String fromEmail
     ) {
-        this.mailSender = mailSender;
+        this.mailSenderProvider = mailSenderProvider;
         this.smtpHost = smtpHost;
         this.toEmail = toEmail;
         this.fromEmail = fromEmail;
     }
 
+    @Async
     public void sendContactNotification(ContactMessage message) {
-        if (smtpHost == null || smtpHost.isBlank()) {
+        if (smtpHost == null || smtpHost.isBlank() || toEmail == null || toEmail.isBlank()) {
             log.info(
-                "SMTP_HOST not set — skipping email notification for contact message #{}. "
-                    + "The message is still saved in the database.",
+                "SMTP_HOST or NOTIFY_TO_EMAIL not set — skipping email notification for "
+                    + "contact message #{}. The message is still saved in the database.",
                 message.getId()
             );
+            return;
+        }
+
+        JavaMailSender mailSender = mailSenderProvider.getIfAvailable();
+        if (mailSender == null) {
+            log.warn("spring.mail.host is set but no JavaMailSender bean is available — skipping "
+                + "email notification for contact message #{}.", message.getId());
             return;
         }
 
@@ -73,7 +97,8 @@ public class EmailService {
             log.info("Emailed contact notification for message #{} to {}", message.getId(), toEmail);
         } catch (Exception e) {
             // Never propagate — a broken SMTP relay shouldn't turn into a
-            // 500 for someone who just filled out the contact form.
+            // 500 for someone who just filled out the contact form, and by
+            // this point the response has already been sent anyway.
             log.warn(
                 "Failed to email contact notification for message #{}: {}",
                 message.getId(),

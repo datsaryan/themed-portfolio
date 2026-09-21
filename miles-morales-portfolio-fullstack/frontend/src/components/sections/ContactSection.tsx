@@ -1,13 +1,15 @@
 import React, { useState } from 'react';
 import { useResumeData } from '../../data/useResumeData';
-import { Mail, Phone, Linkedin, Github, Send, Copy, Check, Terminal, ExternalLink, FileDown } from 'lucide-react';
+import { Mail, Phone, Linkedin, Github, Send, Copy, Check, Terminal, ExternalLink, FileDown, Loader2 } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
 import { submitContactMessage } from '../../services/api';
+import { Reveal } from '../effects/ScrollReveal';
 
 export const ContactSection: React.FC = () => {
   const { personal } = useResumeData();
   const [copied, setCopied] = useState(false);
   const [formSent, setFormSent] = useState(false);
+  const [isSending, setIsSending] = useState(false);
   const [formData, setFormData] = useState({ name: '', email: '', message: '' });
   // 'api': backend confirmed the email was queued/sent — no need to bother
   // the visitor's own mail client. 'mailto': backend wasn't reachable/
@@ -23,36 +25,43 @@ export const ContactSection: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (isSending) return; // guard against double-submits while a request is in flight
     sound.playThwip();
+    setIsSending(true);
 
-    // Try the backend first — when it's configured and reachable, it emails
-    // the message straight to Aryan's inbox itself (see backend EmailService),
-    // no visitor mail client required.
-    const delivered = await submitContactMessage(formData);
+    try {
+      // Try the backend first — when it's configured and reachable, it emails
+      // the message straight to Aryan's inbox itself (see backend EmailService),
+      // no visitor mail client required. Capped at 8s (see api.ts) so a slow
+      // backend can't leave this hanging.
+      const delivered = await submitContactMessage(formData);
 
-    if (delivered) {
-      setDeliveryMode('api');
-    } else {
-      // Backend not deployed / not configured / request failed — fall back
-      // to opening the visitor's own mail client so the message still gets
-      // sent somewhere, even if it now depends on them hitting send.
-      setDeliveryMode('mailto');
-      const subject = encodeURIComponent(`Portfolio Inquiry from ${formData.name}`);
-      const body = encodeURIComponent(`${formData.message}\n\nFrom: ${formData.name} (${formData.email})`);
-      window.open(`mailto:${personal.email}?subject=${subject}&body=${body}`, '_blank');
+      if (delivered) {
+        setDeliveryMode('api');
+      } else {
+        // Backend not deployed / not configured / request failed or timed out
+        // — fall back to opening the visitor's own mail client so the message
+        // still gets sent somewhere, even if it now depends on them hitting send.
+        setDeliveryMode('mailto');
+        const subject = encodeURIComponent(`Portfolio Inquiry from ${formData.name}`);
+        const body = encodeURIComponent(`${formData.message}\n\nFrom: ${formData.name} (${formData.email})`);
+        window.open(`mailto:${personal.email}?subject=${subject}&body=${body}`, '_blank');
+      }
+
+      setFormSent(true);
+      setTimeout(() => {
+        setFormSent(false);
+        setFormData({ name: '', email: '', message: '' });
+      }, 4000);
+    } finally {
+      setIsSending(false);
     }
-
-    setFormSent(true);
-    setTimeout(() => {
-      setFormSent(false);
-      setFormData({ name: '', email: '', message: '' });
-    }, 4000);
   };
 
   return (
     <section id="contact" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
       {/* Section Header */}
-      <div className="mb-12">
+      <Reveal className="mb-12">
         <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
           <Send className="w-4 h-4" />
           <span>COMMS // 05</span>
@@ -68,11 +77,11 @@ export const ContactSection: React.FC = () => {
         <p className="text-sm sm:text-base text-subtext mt-2 font-mono">
           // DISPATCH SECURE COMMUNIQUE DIRECTLY TO ARYAN SINGH'S TERMINAL
         </p>
-      </div>
+      </Reveal>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
         {/* Left Column: Direct Transmission Channels */}
-        <div className="lg:col-span-5 space-y-6">
+        <Reveal direction="left" className="lg:col-span-5 space-y-6">
           {/* Email Direct Access Box */}
           <div className="bg-surface/90 border border-borderDark comic-border p-6 relative">
             <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-4">
@@ -183,10 +192,10 @@ export const ContactSection: React.FC = () => {
               <span>DOWNLOAD</span>
             </a>
           </div>
-        </div>
+        </Reveal>
 
         {/* Right Column: Web Message Terminal Form */}
-        <div className="lg:col-span-7 bg-surface/90 border border-borderDark comic-border p-6 sm:p-8 relative">
+        <Reveal direction="right" delay={0.1} className="lg:col-span-7 bg-surface/90 border border-borderDark comic-border p-6 sm:p-8 relative">
           <div className="flex items-center justify-between border-b border-borderDark/80 pb-3 mb-6">
             <span className="font-mono text-xs text-graffiti-yellow font-bold uppercase tracking-wider flex items-center gap-2">
               <Terminal className="w-4 h-4 text-spider" />
@@ -257,14 +266,24 @@ export const ContactSection: React.FC = () => {
 
               <button
                 type="submit"
-                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-spider hover:bg-spider-bright text-white font-mono text-xs uppercase font-bold tracking-widest transition-all shadow-comic-black border border-white/20 mt-4"
+                disabled={isSending}
+                className="w-full flex items-center justify-center gap-2 px-6 py-3.5 bg-spider hover:bg-spider-bright disabled:bg-spider/60 disabled:cursor-wait text-white font-mono text-xs uppercase font-bold tracking-widest transition-all shadow-comic-black border border-white/20 mt-4"
               >
-                <Send className="w-4 h-4" />
-                <span>SLING WEB MESSAGE // TRANSMIT</span>
+                {isSending ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <span>TRANSMITTING...</span>
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-4 h-4" />
+                    <span>SLING WEB MESSAGE // TRANSMIT</span>
+                  </>
+                )}
               </button>
             </form>
           )}
-        </div>
+        </Reveal>
       </div>
     </section>
   );

@@ -5,6 +5,7 @@ import { SpideyWebOverlay } from '../effects/SpideyWebOverlay';
 import { ProjectModal } from './ProjectModal';
 import { Target, ExternalLink, Github, Sparkles, Terminal } from 'lucide-react';
 import { sound } from '../../audio/soundEngine';
+import { Reveal, RevealStagger, RevealItem } from '../effects/ScrollReveal';
 
 export const ProjectsSection: React.FC = () => {
   const { missions } = useResumeData();
@@ -38,7 +39,7 @@ export const ProjectsSection: React.FC = () => {
   return (
     <section id="projects" className="relative py-20 px-4 sm:px-6 max-w-7xl mx-auto">
       {/* Section Header */}
-      <div className="mb-12">
+      <Reveal className="mb-12">
         <div className="flex items-center gap-2 mb-2 font-mono text-xs uppercase tracking-widest text-spider font-bold">
           <Target className="w-4 h-4" />
           <span>ACTIVE MISSIONS // 03</span>
@@ -63,13 +64,13 @@ export const ProjectsSection: React.FC = () => {
             <span>INTERACTIVE SPIDEY WEB ENABLED</span>
           </div>
         </div>
-      </div>
+      </Reveal>
 
       {/* Projects Grid: Asymmetric Comic Panels */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+      <RevealStagger className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {missions.map((mission, index) => {
           return (
-            <div
+            <RevealItem
               key={mission.id}
               onClick={(e) => handleCardClick(e, mission)}
               className={`group relative bg-surface/90 border comic-border p-6 sm:p-7 cursor-pointer flex flex-col justify-between transition-all duration-200 overflow-hidden ${
@@ -194,10 +195,10 @@ export const ProjectsSection: React.FC = () => {
                   <path d="M 40,100 Q 70,70 100,40" />
                 </svg>
               </div>
-            </div>
+            </RevealItem>
           );
         })}
-      </div>
+      </RevealStagger>
 
       {/* Dynamic Procedural Spidey Web Modal Triggered on Click */}
       {selectedProject && (
