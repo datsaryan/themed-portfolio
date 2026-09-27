@@ -1,111 +1,297 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
 :root {
-  --text: #6b6375;
-  --text-h: #08060d;
-  --bg: #fff;
-  --border: #e5e4e7;
-  --code-bg: #f4f3ec;
-  --accent: #aa3bff;
-  --accent-bg: rgba(170, 59, 255, 0.1);
-  --accent-border: rgba(170, 59, 255, 0.5);
-  --social-bg: rgba(244, 243, 236, 0.5);
-  --shadow:
-    rgba(0, 0, 0, 0.1) 0 10px 15px -3px, rgba(0, 0, 0, 0.05) 0 4px 6px -2px;
-
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --heading: system-ui, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, Consolas, monospace;
-
-  font: 18px/145% var(--sans);
-  letter-spacing: 0.18px;
-  color-scheme: light dark;
-  color: var(--text);
-  background: var(--bg);
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-
-  @media (max-width: 1024px) {
-    font-size: 16px;
-  }
+  --c-void: #08070d;
+  --c-surface: #0e0c18;
+  --c-card: #131122;
+  --c-border: #2e1d3e;
+  --c-text: #d6cae6;
+  --c-muted: #7d6b91;
+  --c-red: #ff2a2a;
+  --c-crimson: #d11212;
+  --c-amber: #f6ad55;
+  --c-orange: #ed8936;
+  --c-olive: #68d391;
+  --c-navy: #2d3748;
+  --c-crt: rgba(0, 255, 0, 0.03);
+  --c-glow: rgba(229, 62, 62, 0.4);
+  --rift-flash: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --text: #9ca3af;
-    --text-h: #f3f4f6;
-    --bg: #16171d;
-    --border: #2e303a;
-    --code-bg: #1f2028;
-    --accent: #c084fc;
-    --accent-bg: rgba(192, 132, 252, 0.15);
-    --accent-border: rgba(192, 132, 252, 0.5);
-    --social-bg: rgba(47, 48, 58, 0.5);
-    --shadow:
-      rgba(0, 0, 0, 0.4) 0 10px 15px -3px, rgba(0, 0, 0, 0.25) 0 4px 6px -2px;
-  }
-
-  #social .button-icon {
-    filter: invert(1) brightness(2);
-  }
-}
-
-#root {
-  width: 1126px;
-  max-width: 100%;
-  margin: 0 auto;
-  text-align: center;
-  border-inline: 1px solid var(--border);
-  min-height: 100svh;
-  display: flex;
-  flex-direction: column;
-  box-sizing: border-box;
+html.upsidedown {
+  --c-void: #080101;
+  --c-surface: #150303;
+  --c-card: #1f0505;
+  --c-border: #520c0c;
+  --c-text: #f0cece;
+  --c-muted: #9c4848;
+  --c-red: #ff1100;
+  --c-crimson: #cc0000;
+  --c-amber: #ff6600;
+  --c-orange: #ff3300;
+  --c-olive: #ff2255;
+  --c-navy: #330000;
+  --c-crt: rgba(255, 20, 0, 0.05);
+  --c-glow: rgba(255, 17, 0, 0.65);
 }
 
 body {
   margin: 0;
+  background-color: var(--c-void);
+  color: var(--c-text);
+  font-family: 'Inter', sans-serif;
+  overflow-x: hidden;
+  transition: background-color 0.5s ease, color 0.5s ease;
 }
 
-h1,
-h2 {
-  font-family: var(--heading);
-  font-weight: 500;
-  color: var(--text-h);
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 9px;
 }
-
-h1 {
-  font-size: 56px;
-  letter-spacing: -1.68px;
-  margin: 32px 0;
-  @media (max-width: 1024px) {
-    font-size: 36px;
-    margin: 20px 0;
-  }
+::-webkit-scrollbar-track {
+  background: var(--c-void);
 }
-h2 {
-  font-size: 24px;
-  line-height: 118%;
-  letter-spacing: -0.24px;
-  margin: 0 0 8px;
-  @media (max-width: 1024px) {
-    font-size: 20px;
-  }
-}
-p {
-  margin: 0;
-}
-
-code,
-.counter {
-  font-family: var(--mono);
-  display: inline-flex;
+::-webkit-scrollbar-thumb {
+  background: var(--c-border);
   border-radius: 4px;
-  color: var(--text-h);
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--c-red);
 }
 
-code {
-  font-size: 15px;
-  line-height: 135%;
-  padding: 4px 8px;
-  background: var(--code-bg);
+/* Upside Down Atmospheric Background Transform */
+html.upsidedown body {
+  background: radial-gradient(circle at 50% 10%, #2b0404 0%, #0d0101 60%, #050000 100%);
+  position: relative;
+}
+
+/* Upside Down Tendrils Vignette Border */
+html.upsidedown body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 40;
+  background: radial-gradient(circle at center, transparent 40%, rgba(60, 2, 2, 0.45) 85%, rgba(15, 0, 0, 0.95) 100%);
+  box-shadow: inset 0 0 120px rgba(255, 0, 0, 0.35);
+  animation: pulseTendril 4s ease-in-out infinite;
+}
+
+@keyframes pulseTendril {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}
+
+/* Screen Shake on World Shift */
+.animate-rift-shake {
+  animation: riftShake 0.6s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+@keyframes riftShake {
+  10%, 90% { transform: translate3d(-2px, 0, 0) rotate(-0.2deg); }
+  20%, 80% { transform: translate3d(3px, -1px, 0) rotate(0.2deg); }
+  30%, 50%, 70% { transform: translate3d(-4px, 2px, 0) rotate(-0.3deg); }
+  40%, 60% { transform: translate3d(4px, -2px, 0) rotate(0.3deg); }
+}
+
+/* Red Dimensional Flash */
+.rift-flash-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 99999;
+  background-color: rgba(255, 0, 0, 0.65);
+  animation: flashFade 0.7s ease-out forwards;
+}
+
+@keyframes flashFade {
+  0% { opacity: 1; }
+  50% { opacity: 0.4; }
+  100% { opacity: 0; visibility: hidden; }
+}
+
+/* CRT Screen Effect Overlay */
+.crt-overlay {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9997;
+  background: linear-gradient(
+    rgba(18, 16, 16, 0) 50%,
+    rgba(0, 0, 0, 0.3) 50%
+  );
+  background-size: 100% 3px;
+  opacity: 0.65;
+}
+
+.crt-vignette {
+  pointer-events: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 9996;
+  box-shadow: inset 0 0 120px rgba(0, 0, 0, 0.88);
+}
+
+/* Stranger Things Glowing Title */
+.stranger-title {
+  font-family: 'Cinzel Decorative', serif;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: #ff3b30;
+  text-shadow:
+    0 0 8px #ff3b30,
+    0 0 16px #ff3b30,
+    0 0 24px #ff3b30,
+    0 0 48px #b30000,
+    0 0 90px #b30000;
+  transition: all 0.4s ease;
+}
+
+html.upsidedown .stranger-title {
+  color: #ff1100;
+  text-shadow:
+    0 0 10px #ff0000,
+    0 0 20px #ff2a2a,
+    0 0 40px #ff5500,
+    0 0 80px #b30000,
+    0 0 120px #800000;
+  animation: titleGlitch 5s infinite;
+}
+
+@keyframes titleGlitch {
+  0%, 94%, 100% {
+    transform: none;
+    opacity: 1;
+  }
+  95% {
+    transform: skewX(-2deg) translate(-2px, 1px);
+    opacity: 0.85;
+    text-shadow: -3px 0 #00ffff, 3px 0 #ff0000;
+  }
+  96% {
+    transform: skewX(2deg) translate(2px, -1px);
+    opacity: 1;
+    text-shadow: 3px 0 #00ffff, -3px 0 #ff0000;
+  }
+  97% {
+    transform: none;
+    text-shadow: 0 0 10px #ff0000;
+  }
+}
+
+/* Classified Stamp */
+.classified-stamp {
+  display: inline-block;
+  font-family: 'IBM Plex Mono', monospace;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  padding: 4px 14px;
+  border: 2px solid var(--c-red);
+  color: var(--c-red);
+  border-radius: 3px;
+  transform: rotate(-3deg);
+  opacity: 0.9;
+  box-shadow: 0 0 15px rgba(255, 42, 42, 0.3);
+}
+
+html.upsidedown .classified-stamp {
+  border-color: #ff1100;
+  color: #ff3300;
+  box-shadow: 0 0 20px rgba(255, 17, 0, 0.6);
+  transform: rotate(2deg);
+}
+
+/* Hawkins Terminal Typography */
+.font-mono-hawkins {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Case File Card Style */
+.case-file-card {
+  background-color: var(--c-card);
+  border: 1px solid var(--c-border);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.case-file-card:hover {
+  border-color: var(--c-red);
+  box-shadow: 0 10px 35px var(--c-glow);
+  transform: translateY(-4px);
+}
+
+html.upsidedown .case-file-card {
+  border-color: #4a0c0c;
+  background-color: rgba(25, 4, 4, 0.85);
+  backdrop-filter: blur(8px);
+}
+
+html.upsidedown .case-file-card:hover {
+  border-color: #ff2200;
+  box-shadow: 0 10px 40px rgba(255, 34, 0, 0.5);
+  transform: translateY(-4px) scale(1.01);
+}
+
+/* Christmas Light Bulbs (Easter Egg) */
+.christmas-bulb {
+  transition: all 0.15s ease-in-out;
+  cursor: pointer;
+}
+
+.christmas-bulb:hover {
+  transform: scale(1.15);
+}
+
+.bulb-lit-yellow {
+  filter: drop-shadow(0 0 16px #ffea00) drop-shadow(0 0 30px #ffd700);
+}
+.bulb-lit-blue {
+  filter: drop-shadow(0 0 16px #00d4ff) drop-shadow(0 0 30px #0099ff);
+}
+.bulb-lit-green {
+  filter: drop-shadow(0 0 16px #00ff66) drop-shadow(0 0 30px #00cc44);
+}
+.bulb-lit-red {
+  filter: drop-shadow(0 0 18px #ff1a1a) drop-shadow(0 0 35px #cc0000);
+}
+.bulb-lit-purple {
+  filter: drop-shadow(0 0 16px #e600ff) drop-shadow(0 0 30px #9900ff);
+}
+.bulb-lit-orange {
+  filter: drop-shadow(0 0 16px #ff7700) drop-shadow(0 0 30px #ff4400);
+}
+
+/* Spotlight Follower */
+.flashlight-spotlight {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 15;
+  background: radial-gradient(
+    circle 260px at var(--mouse-x, 50vw) var(--mouse-y, 50vh),
+    transparent 0%,
+    rgba(0, 0, 0, 0.35) 60%,
+    rgba(0, 0, 0, 0.7) 100%
+  );
+  opacity: 0.55;
+  transition: opacity 0.3s ease;
+}
+
+html.upsidedown .flashlight-spotlight {
+  background: radial-gradient(
+    circle 280px at var(--mouse-x, 50vw) var(--mouse-y, 50vh),
+    rgba(255, 30, 0, 0.08) 0%,
+    rgba(20, 0, 0, 0.5) 55%,
+    rgba(5, 0, 0, 0.85) 100%
+  );
+  opacity: 0.85;
 }

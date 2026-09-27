@@ -1,6 +1,8 @@
 spring:
   application:
     name: stranger-things-portfolio
+  profiles:
+    default: local
 
   datasource:
     url: jdbc:postgresql://localhost:5432/portfolio_db
