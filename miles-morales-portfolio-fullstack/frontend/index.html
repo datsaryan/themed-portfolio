@@ -28,9 +28,301 @@
         } catch (e) {}
       })();
     </script>
+
+    <!--
+      Boot / rescue splash. Lives here, in plain HTML/CSS/JS, deliberately
+      outside the React bundle — it has to be able to paint and animate
+      before /src/main.tsx has even finished downloading, or it can't cover
+      the "site is slow to open" case at all. It resolves one of two ways:
+
+        - React mounts (see App.tsx dispatching 'portfolio:app-ready') before
+          READY_TIMEOUT_MS: the web-slinger's swing finishes, he catches her,
+          and the whole overlay fades out.
+        - Nothing fires within READY_TIMEOUT_MS (dead deploy, network died,
+          JS failed to parse, etc.): she finishes the fall, hits the ground,
+          and a "failed to load" panel with a retry button takes over.
+
+      Purely decorative, original vector shapes — no imagery, no copyrighted
+      art, just simple geometric silhouettes in the site's own palette.
+    -->
+    <style>
+      #ps-loader {
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 1.5rem;
+        background: rgb(7 8 11);
+        color: rgb(243 244 248);
+        font-family: 'JetBrains Mono', 'Courier New', monospace;
+        text-align: center;
+        padding: 1.5rem;
+        transition: opacity 0.5s ease;
+      }
+      html.light #ps-loader {
+        background: rgb(236 232 222);
+        color: rgb(20 20 25);
+      }
+      #ps-loader.ps-hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #ps-stage {
+        position: relative;
+        width: min(72vw, 260px);
+        height: min(72vw, 260px);
+      }
+      #ps-stage svg { width: 100%; height: 100%; overflow: visible; }
+
+      #ps-web-line {
+        stroke: rgba(255, 255, 255, 0.35);
+        stroke-width: 1.5;
+        stroke-dasharray: 3 4;
+        fill: none;
+      }
+      html.light #ps-web-line { stroke: rgba(40, 32, 26, 0.4); }
+
+      #ps-hero-group { transform-origin: 210px 10px; animation: ps-swing 1.7s ease-in-out infinite; }
+      #ps-falling-group { transform-origin: center; animation: ps-fall-loop 2.1s ease-in-out infinite; }
+
+      @keyframes ps-swing {
+        0%, 100% { transform: rotate(-16deg); }
+        50% { transform: rotate(20deg); }
+      }
+      @keyframes ps-fall-loop {
+        0%, 100% { transform: translateY(0) rotate(-4deg); }
+        50% { transform: translateY(14px) rotate(4deg); }
+      }
+
+      /* Success: one clean swing down into a caught embrace, then fade. */
+      #ps-loader.ps-success #ps-hero-group {
+        animation: ps-swing-catch 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      #ps-loader.ps-success #ps-falling-group {
+        animation: ps-caught-hold 0.7s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+      }
+      @keyframes ps-swing-catch {
+        to { transform: rotate(10deg) translate(-38px, 46px); }
+      }
+      @keyframes ps-caught-hold {
+        to { transform: translate(-6px, -4px) rotate(0deg); }
+      }
+
+      /* Failure: she keeps falling past the frame and hits the ground. */
+      #ps-loader.ps-failed #ps-hero-group {
+        animation: ps-swing-miss 0.5s ease-out forwards;
+      }
+      #ps-loader.ps-failed #ps-falling-group {
+        animation: ps-fall-final 0.9s cubic-bezier(0.55, 0, 1, 0.45) forwards;
+      }
+      @keyframes ps-swing-miss {
+        to { transform: rotate(-30deg) translate(6px, -6px); }
+      }
+      @keyframes ps-fall-final {
+        to { transform: translateY(150px) rotate(50deg); opacity: 0; }
+      }
+      #ps-impact {
+        opacity: 0;
+        transform: scale(0.4);
+        transform-origin: center;
+      }
+      #ps-loader.ps-failed #ps-impact {
+        animation: ps-impact-burst 0.4s ease-out 0.75s forwards;
+      }
+      @keyframes ps-impact-burst {
+        0% { opacity: 0; transform: scale(0.4); }
+        60% { opacity: 1; transform: scale(1.15); }
+        100% { opacity: 0; transform: scale(1.4); }
+      }
+      #ps-loader.ps-failed #ps-stage {
+        animation: ps-shake 0.4s ease-out 0.75s;
+      }
+      @keyframes ps-shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-6px); }
+        75% { transform: translateX(6px); }
+      }
+
+      #ps-status {
+        font-size: 0.7rem;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        opacity: 0.75;
+        min-height: 1.2em;
+      }
+      #ps-fail-panel {
+        display: none;
+        flex-direction: column;
+        align-items: center;
+        gap: 0.75rem;
+        border: 1px solid rgba(230, 36, 41, 0.5);
+        background: rgba(230, 36, 41, 0.08);
+        padding: 1rem 1.5rem;
+        max-width: 320px;
+      }
+      #ps-loader.ps-failed #ps-fail-panel { display: flex; }
+      #ps-loader.ps-failed #ps-status { display: none; }
+      #ps-fail-title {
+        color: rgb(255, 31, 61);
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        font-size: 0.85rem;
+      }
+      #ps-fail-desc {
+        font-size: 0.72rem;
+        opacity: 0.8;
+        line-height: 1.5;
+      }
+      #ps-retry {
+        margin-top: 0.25rem;
+        padding: 0.55rem 1.4rem;
+        background: rgb(230, 36, 41);
+        color: white;
+        border: none;
+        font-family: inherit;
+        font-size: 0.7rem;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        cursor: pointer;
+      }
+      #ps-retry:hover { background: rgb(255, 31, 61); }
+
+      @media (prefers-reduced-motion: reduce) {
+        #ps-hero-group, #ps-falling-group { animation: none !important; }
+        #ps-loader.ps-success #ps-hero-group,
+        #ps-loader.ps-success #ps-falling-group,
+        #ps-loader.ps-failed #ps-hero-group,
+        #ps-loader.ps-failed #ps-falling-group,
+        #ps-loader.ps-failed #ps-stage { animation: none !important; }
+        #ps-loader.ps-failed #ps-impact { animation: none !important; opacity: 1; transform: scale(1); }
+      }
+    </style>
   </head>
   <body class="bg-void text-web font-sans antialiased selection:bg-spider selection:text-white overflow-x-hidden">
+    <div
+      id="ps-loader"
+      role="status"
+      aria-live="polite"
+      aria-label="Loading Aryan Singh's portfolio"
+    >
+      <div id="ps-stage">
+        <svg viewBox="0 0 260 260" aria-hidden="true">
+          <!-- web anchor + strand -->
+          <line id="ps-web-line" x1="210" y1="10" x2="210" y2="60" />
+
+          <!-- falling figure ("civilian in freefall") -->
+          <g id="ps-falling-group">
+            <g transform="translate(70 150)">
+              <line x1="-14" y1="-26" x2="-26" y2="-40" stroke="rgb(255 214 0)" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+              <line x1="14" y1="-26" x2="26" y2="-40" stroke="rgb(255 214 0)" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+              <circle cx="0" cy="-18" r="12" fill="rgb(255 214 0)" />
+              <rect x="-9" y="-6" width="18" height="26" rx="7" fill="rgb(255 214 0)" opacity="0.9" />
+              <line x1="-9" y1="4" x2="-20" y2="16" stroke="rgb(255 214 0)" stroke-width="5" stroke-linecap="round" opacity="0.9" />
+              <line x1="9" y1="4" x2="20" y2="16" stroke="rgb(255 214 0)" stroke-width="5" stroke-linecap="round" opacity="0.9" />
+              <line x1="-4" y1="20" x2="-8" y2="34" stroke="rgb(255 214 0)" stroke-width="5" stroke-linecap="round" opacity="0.9" />
+              <line x1="4" y1="20" x2="8" y2="34" stroke="rgb(255 214 0)" stroke-width="5" stroke-linecap="round" opacity="0.9" />
+            </g>
+          </g>
+
+          <!-- hero, swinging in on the web line -->
+          <g id="ps-hero-group">
+            <g transform="translate(210 60)">
+              <circle cx="0" cy="14" r="13" fill="rgb(230 36 41)" />
+              <path d="M -7 12 Q 0 6 7 12" stroke="white" stroke-width="2" fill="none" opacity="0.85" />
+              <path d="M -7 16 Q 0 22 7 16" stroke="white" stroke-width="2" fill="none" opacity="0.85" />
+              <rect x="-10" y="28" width="20" height="30" rx="8" fill="rgb(230 36 41)" />
+              <line x1="-10" y1="34" x2="-34" y2="20" stroke="rgb(230 36 41)" stroke-width="6" stroke-linecap="round" />
+              <line x1="10" y1="40" x2="30" y2="58" stroke="rgb(230 36 41)" stroke-width="6" stroke-linecap="round" />
+              <line x1="-6" y1="58" x2="-16" y2="80" stroke="rgb(230 36 41)" stroke-width="6" stroke-linecap="round" />
+              <line x1="6" y1="58" x2="18" y2="78" stroke="rgb(230 36 41)" stroke-width="6" stroke-linecap="round" />
+            </g>
+          </g>
+
+          <!-- impact burst, shown only on failure -->
+          <g id="ps-impact" transform="translate(70 236)">
+            <polygon points="0,-16 5,-5 17,-8 8,2 14,14 0,7 -14,14 -8,2 -17,-8 -5,-5"
+              fill="rgb(255 214 0)" />
+          </g>
+        </svg>
+      </div>
+
+      <div id="ps-status">// establishing uplink&hellip;</div>
+
+      <div id="ps-fail-panel" role="alert">
+        <div id="ps-fail-title">SIGNAL LOST // FAILED TO LOAD</div>
+        <div id="ps-fail-desc">The rescue didn't make it in time — the page took too long to respond. Check your connection and try again.</div>
+        <button id="ps-retry" type="button">Retry</button>
+      </div>
+    </div>
+
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+
+    <script>
+      (function () {
+        var loader = document.getElementById('ps-loader');
+        var statusEl = document.getElementById('ps-status');
+        var retryBtn = document.getElementById('ps-retry');
+        if (!loader) return;
+
+        var MIN_DISPLAY_MS = 1400;  // let at least one swing play out, even on instant loads
+        var READY_TIMEOUT_MS = 12000; // beyond this, treat it as a failed load
+        var startedAt = Date.now();
+        var settled = false; // true once success or failure has been decided
+
+        var statusLines = [
+          '// establishing uplink…',
+          '// calculating web trajectory…',
+          '// closing the distance…',
+        ];
+        var statusIndex = 0;
+        var statusTimer = setInterval(function () {
+          statusIndex = (statusIndex + 1) % statusLines.length;
+          if (statusEl) statusEl.textContent = statusLines[statusIndex];
+        }, 1100);
+
+        function hideLoader() {
+          loader.classList.add('ps-hidden');
+          setTimeout(function () {
+            if (loader.parentNode) loader.parentNode.removeChild(loader);
+          }, 550);
+        }
+
+        function succeed() {
+          if (settled) return;
+          settled = true;
+          clearInterval(statusTimer);
+          clearTimeout(failTimer);
+          var elapsed = Date.now() - startedAt;
+          var wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
+          setTimeout(function () {
+            loader.classList.add('ps-success');
+            if (statusEl) statusEl.textContent = 'civilian secured. welcome.';
+            setTimeout(hideLoader, 700);
+          }, wait);
+        }
+
+        function fail() {
+          if (settled) return;
+          settled = true;
+          clearInterval(statusTimer);
+          loader.classList.add('ps-failed');
+        }
+
+        var failTimer = setTimeout(fail, READY_TIMEOUT_MS);
+
+        window.addEventListener('portfolio:app-ready', succeed, { once: true });
+
+        if (retryBtn) {
+          retryBtn.addEventListener('click', function () {
+            window.location.reload();
+          });
+        }
+      })();
+    </script>
   </body>
 </html>

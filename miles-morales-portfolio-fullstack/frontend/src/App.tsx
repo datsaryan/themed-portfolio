@@ -21,6 +21,14 @@ export function App() {
     setVenomActive(true);
   }, []);
 
+  // Tells the pre-React boot splash (index.html — see the "web-rescue" loader
+  // there) that the app has actually mounted, so it can play its "caught her"
+  // ending and fade out. This fires even if App re-mounts under StrictMode's
+  // double-invoke in dev; the splash script only listens for the first one.
+  useEffect(() => {
+    window.dispatchEvent(new Event('portfolio:app-ready'));
+  }, []);
+
   // Global Interactive Click Listener for authentic tactile clicking sound
   useEffect(() => {
     const handleGlobalClick = (e: MouseEvent) => {
