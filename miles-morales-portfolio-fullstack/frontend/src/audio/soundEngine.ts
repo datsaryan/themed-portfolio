@@ -564,6 +564,108 @@ class SoundEngine {
     });
   }
 
+  /**
+   * Boot cinematic cues. Same synthesis vocabulary as playThwip(): filtered
+   * noise for air, a falling sine for weight. All three share a context
+   * guard so a suspended/blocked AudioContext simply stays silent.
+   */
+
+  /** Rushing-air whoosh as Miles dives. */
+  public playWhoosh() {
+    void this.ensureRunning().then((running) => {
+      if (!running || !this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+      const len = Math.floor(this.ctx.sampleRate * 0.5);
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const src = this.ctx.createBufferSource();
+      src.buffer = buf;
+      const f = this.ctx.createBiquadFilter();
+      f.type = 'bandpass';
+      f.Q.setValueAtTime(1.4, now);
+      f.frequency.setValueAtTime(300, now);
+      f.frequency.exponentialRampToValueAtTime(2400, now + 0.28);
+      f.frequency.exponentialRampToValueAtTime(500, now + 0.5);
+      const g = this.ctx.createGain();
+      g.gain.setValueAtTime(0.001, now);
+      g.gain.linearRampToValueAtTime(0.3, now + 0.2);
+      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      src.connect(f);
+      f.connect(g);
+      g.connect(this.masterGain);
+      src.start(now);
+    });
+  }
+
+  /** Heavy low thud for the moment Gwen hits the ground. */
+  public playImpact() {
+    void this.ensureRunning().then((running) => {
+      if (!running || !this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const og = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(38, now + 0.4);
+      og.gain.setValueAtTime(0.7, now);
+      og.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
+      osc.connect(og);
+      og.connect(this.masterGain);
+      osc.start(now);
+      osc.stop(now + 0.52);
+
+      const len = Math.floor(this.ctx.sampleRate * 0.3);
+      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+      const n = this.ctx.createBufferSource();
+      n.buffer = buf;
+      const lp = this.ctx.createBiquadFilter();
+      lp.type = 'lowpass';
+      lp.frequency.setValueAtTime(1400, now);
+      lp.frequency.exponentialRampToValueAtTime(120, now + 0.28);
+      const ng = this.ctx.createGain();
+      ng.gain.setValueAtTime(0.4, now);
+      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      n.connect(lp);
+      lp.connect(ng);
+      ng.connect(this.masterGain);
+      n.start(now);
+    });
+  }
+
+  /** Spider-sense tingle: two quick rising blips with a shimmer. */
+  public playSenseTingle() {
+    void this.ensureRunning().then((running) => {
+      if (!running || !this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+      [0, 0.09].forEach((offset, i) => {
+        const osc = this.ctx!.createOscillator();
+        const lfo = this.ctx!.createOscillator();
+        const lfoGain = this.ctx!.createGain();
+        const g = this.ctx!.createGain();
+        const start = now + offset;
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(1500 + i * 500, start);
+        osc.frequency.exponentialRampToValueAtTime(2700 + i * 500, start + 0.18);
+        lfo.frequency.value = 38;
+        lfoGain.gain.value = 90;
+        lfo.connect(lfoGain);
+        lfoGain.connect(osc.frequency);
+        g.gain.setValueAtTime(0.001, start);
+        g.gain.linearRampToValueAtTime(0.16, start + 0.02);
+        g.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
+        osc.connect(g);
+        g.connect(this.masterGain!);
+        osc.start(start);
+        lfo.start(start);
+        osc.stop(start + 0.22);
+        lfo.stop(start + 0.22);
+      });
+    });
+  }
+
   /** Venom icon button buzz — a harsh, sustained, menacing electric drone. */
   public playVenomBuzz() {
     void this.ensureRunning().then((running) => {

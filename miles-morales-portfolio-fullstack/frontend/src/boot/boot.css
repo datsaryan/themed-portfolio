@@ -1,0 +1,157 @@
+/* Boot cinematic. Loaded lazily with the CinematicLoader chunk, so it costs
+   nothing on the critical path. Palette mirrors the portfolio's own tokens
+   (spider red, venom violet, graffiti yellow/cyan, void black). */
+
+.boot-root {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  overflow: hidden;
+  background: #05060a;
+  color: #f3f4f8;
+  /* the page behind never scrolls while the cinematic owns the screen */
+  overscroll-behavior: contain;
+  touch-action: none;
+  animation: boot-in 0.35s ease-out both;
+}
+@keyframes boot-in { from { opacity: 0; } to { opacity: 1; } }
+.boot-root.boot-passthrough { pointer-events: none; }
+
+.boot-stage { position: absolute; inset: 0; overflow: hidden; contain: layout paint; }
+
+.boot-layer { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
+/* Each layer's art is clipped to the viewport + a 25% margin on every side
+   (enough for camera pan/zoom). Unclipped, the art spans thousands of px and
+   every composited layer becomes a huge texture — that alone cost ~45 fps. */
+.boot-layer-svg { position: absolute; left: -25%; top: -25%; width: 150%; height: 150%; display: block; overflow: hidden; }
+
+.boot-particles, .boot-speed { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
+.boot-speed [data-fx='speed'] { opacity: 0; transform-origin: 0 0; will-change: transform, opacity; }
+
+/* comic halftone + vignette: static, so effectively free */
+.boot-halftone {
+  position: absolute; inset: 0; pointer-events: none; opacity: 0.32;
+  background-image: radial-gradient(rgba(255, 255, 255, 0.34) 1.1px, transparent 1.5px);
+  background-size: 7px 7px;
+  -webkit-mask-image: radial-gradient(ellipse at 50% 45%, transparent 38%, #000 100%);
+  mask-image: radial-gradient(ellipse at 50% 45%, transparent 38%, #000 100%);
+}
+.boot-vignette {
+  position: absolute; inset: 0; pointer-events: none;
+  background:
+    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.62) 100%),
+    linear-gradient(200deg, rgba(230, 36, 41, 0.10), transparent 45%),
+    linear-gradient(-20deg, rgba(106, 92, 255, 0.10), transparent 40%);
+}
+
+.boot-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
+.boot-glitch { position: absolute; inset: 0; pointer-events: none; display: none; overflow: hidden; }
+.boot-glitch i { position: absolute; left: 0; width: 100%; height: 4%; opacity: 0; }
+.boot-glitch i:nth-child(1) { background: linear-gradient(90deg, rgba(255, 40, 70, 0.7), rgba(255, 40, 70, 0.1)); }
+.boot-glitch i:nth-child(2) { background: linear-gradient(90deg, rgba(0, 210, 255, 0.1), rgba(0, 210, 255, 0.7)); }
+.boot-glitch i:nth-child(3) { background: rgba(255, 255, 255, 0.5); }
+
+.boot-bar { position: absolute; left: 0; right: 0; height: 8%; background: #000; z-index: 3; will-change: transform; }
+.boot-bar-top { top: 0; transform: translateY(-100%); }
+.boot-bar-bottom { bottom: 0; transform: translateY(100%); }
+
+/* ---- caption (comic narration box) ---------------------------------- */
+.boot-hud {
+  position: absolute; left: 0; right: 0; bottom: 13%; z-index: 4;
+  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
+  padding: 0 1.25rem; pointer-events: none; text-align: center;
+}
+.boot-caption {
+  font-family: 'Oswald', 'Impact', sans-serif; font-weight: 700;
+  font-size: clamp(0.9rem, 2.4vw, 1.35rem);
+  letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0f;
+  background: #ffd23f; padding: 0.35rem 0.9rem;
+  border: 2px solid #0a0a0f; box-shadow: 4px 4px 0 #e62429;
+  transform: rotate(-1.4deg);
+  max-width: 100%;
+  animation: boot-caption-in 0.28s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes boot-caption-in { from { opacity: 0; transform: translateY(8px) rotate(-3deg) scale(0.92); } to { opacity: 1; transform: rotate(-1.4deg); } }
+.boot-sub {
+  font-family: 'JetBrains Mono', monospace; font-size: clamp(0.58rem, 1.6vw, 0.7rem);
+  letter-spacing: 0.16em; text-transform: uppercase; color: rgba(243, 244, 248, 0.62);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
+}
+
+/* ---- failure card ---------------------------------------------------- */
+.boot-fail {
+  /* anchored high so the failed-rescue tableau stays visible below it */
+  position: absolute; left: 50%; top: 5%; z-index: 5;
+  width: min(92vw, 30rem);
+  max-height: 90vh; overflow-y: auto;
+  transform: translate(-50%, 0);
+  display: flex; flex-direction: column; align-items: center; gap: 0.9rem;
+  padding: clamp(1.1rem, 4vw, 1.9rem);
+  text-align: center;
+  background: rgba(8, 7, 12, 0.86);
+  border: 2px solid #ff3b45;
+  box-shadow: 6px 6px 0 #6a5cff, 0 24px 70px rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(6px);
+  animation: boot-fail-in 0.42s cubic-bezier(0.2, 1.3, 0.4, 1) both;
+}
+@keyframes boot-fail-in {
+  from { opacity: 0; transform: translate(-50%, -14px) scale(0.94) rotate(-1deg); }
+  to   { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0); }
+}
+.boot-fail-kicker {
+  font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 0.2em;
+  text-transform: uppercase; color: #ffd23f;
+}
+.boot-fail-title {
+  margin: 0;
+  font-family: 'Bangers', 'Impact', sans-serif; font-weight: 400;
+  font-size: clamp(1.7rem, 7vw, 2.7rem); line-height: 1.02; letter-spacing: 0.05em; text-transform: uppercase;
+  color: #ff3b45;
+  text-shadow: 1.5px 0 0 #00d2ff, -1.5px 0 0 #6a5cff, 0 3px 0 #08080e;
+  animation: boot-glitch-text 3.2s steps(1) infinite;
+}
+@keyframes boot-glitch-text {
+  0%, 92%, 100% { transform: none; text-shadow: 2px 0 0 #00d2ff, -2px 0 0 #6a5cff, 0 3px 0 #08080e; }
+  93% { transform: translateX(-3px) skewX(-4deg); text-shadow: 5px 0 0 #00d2ff, -5px 0 0 #ff2a50, 0 3px 0 #08080e; }
+  95% { transform: translateX(3px); }
+  97% { transform: translateX(-1px) skewX(2deg); }
+}
+.boot-fail-desc {
+  margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif;
+  font-size: clamp(0.85rem, 2.6vw, 1rem); line-height: 1.5; color: rgba(243, 244, 248, 0.86);
+}
+.boot-fail-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem; margin-top: 0.2rem; width: 100%; }
+.boot-btn {
+  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.74rem;
+  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
+  padding: 0.75rem 1.2rem; min-height: 44px; /* comfortable touch target */
+  border: 2px solid #08080e; color: #fff; background: #e62429;
+  box-shadow: 4px 4px 0 #08080e;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
+}
+.boot-btn:hover { background: #ff1f3d; transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #08080e; }
+.boot-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 #08080e; }
+.boot-btn:focus-visible { outline: 3px solid #ffd23f; outline-offset: 3px; }
+.boot-btn-ghost { background: transparent; color: #c9c3ff; border-color: #6a5cff; box-shadow: 4px 4px 0 rgba(106, 92, 255, 0.45); }
+.boot-btn-ghost:hover { background: rgba(106, 92, 255, 0.18); }
+
+/* ---- web-wipe reveal overlay (sits above the portfolio) -------------- */
+.boot-reveal-web { position: fixed; inset: 0; z-index: 10001; pointer-events: none; }
+.boot-reveal-web svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
+
+/* ---- small screens ---------------------------------------------------- */
+@media (max-height: 520px) {
+  .boot-fail { top: 2%; gap: 0.5rem; padding: 0.8rem 1rem; }
+  .boot-fail-title { font-size: 1.5rem; }
+}
+@media (max-width: 640px) {
+  .boot-bar { height: 6%; }
+  .boot-hud { bottom: 15%; }
+  .boot-halftone { background-size: 6px 6px; }
+}
+
+/* ---- reduced motion: static poster, text only ------------------------- */
+@media (prefers-reduced-motion: reduce) {
+  .boot-root, .boot-caption, .boot-fail, .boot-fail-title { animation: none !important; }
+  .boot-fail-title { text-shadow: 2px 0 0 #00d2ff, -2px 0 0 #6a5cff, 0 3px 0 #08080e; }
+}

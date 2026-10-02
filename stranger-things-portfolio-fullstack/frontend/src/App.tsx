@@ -1,154 +1,97 @@
-import { useState, useEffect } from 'react';
-import { useResumeData } from './data/useResumeData';
-import { HawkinsIntro } from './components/HawkinsIntro';
-import { SporesCanvas } from './components/SporesCanvas';
-import { CRTOverlay } from './components/CRTOverlay';
-import { CustomCursor } from './components/CustomCursor';
-import { Navbar } from './components/Navbar';
-import { HeroSection } from './components/HeroSection';
-import { AboutSection } from './components/AboutSection';
-import { SkillsSection } from './components/SkillsSection';
-import { ProjectsSection } from './components/ProjectsSection';
-import { ChristmasLightsWall } from './components/ChristmasLightsWall';
-import { TimelineSection } from './components/TimelineSection';
-import { ContactSection } from './components/ContactSection';
-import { Footer } from './components/Footer';
-import { AdminTerminalModal } from './components/AdminTerminalModal';
-import { D20GameModal } from './components/D20GameModal';
+import { useState, useEffect, useCallback } from 'react';
+import { HalftoneBackground } from './components/effects/HalftoneBackground';
+import { CustomCursor } from './components/effects/CustomCursor';
+import { HangingSpiderman } from './components/effects/HangingSpiderman';
+import { ScrollWebFall } from './components/effects/ScrollWebFall';
+import { Navbar } from './components/layout/Navbar';
+import { HeroSection } from './components/sections/HeroSection';
+import { AboutSection } from './components/sections/AboutSection';
+import { SkillsSection } from './components/sections/SkillsSection';
+import { ProjectsSection } from './components/sections/ProjectsSection';
+import { TimelineSection } from './components/sections/TimelineSection';
+import { ContactSection } from './components/sections/ContactSection';
+import { Footer } from './components/layout/Footer';
+import { VenomBlastOverlay } from './components/eastereggs/VenomBlastOverlay';
+import { sound } from './audio/soundEngine';
 
 export function App() {
-  const [introDismissed, setIntroDismissed] = useState(false);
-  const [adminOpen, setAdminOpen] = useState(false);
-  const [d20Open, setD20Open] = useState(false);
-  const [isShaking, setIsShaking] = useState(false);
-  const [showRiftFlash, setShowRiftFlash] = useState(false);
+  const [venomActive, setVenomActive] = useState(false);
 
-  const {
-    profile,
-    projects,
-    skills,
-    certifications,
-    education,
-    experience
-  } = useResumeData();
+  const triggerVenom = useCallback(() => {
+    setVenomActive(true);
+  }, []);
 
-  const triggerRiftTransition = () => {
-    setIsShaking(true);
-    setShowRiftFlash(true);
-    setTimeout(() => {
-      setIsShaking(false);
-    }, 600);
-    setTimeout(() => {
-      setShowRiftFlash(false);
-    }, 700);
-  };
-
-  const handleOpenEasterEgg = () => {
-    const el = document.getElementById('christmas-lights');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  // Konami Code Easter Egg (Up Up Down Down Left Right Left Right B A)
+  // Global Interactive Click Listener for authentic tactile clicking sound
   useEffect(() => {
-    const konami = [
-      'ArrowUp', 'ArrowUp',
-      'ArrowDown', 'ArrowDown',
-      'ArrowLeft', 'ArrowRight',
-      'ArrowLeft', 'ArrowRight',
-      'b', 'a'
-    ];
-    let konamiIdx = 0;
-
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key.toLowerCase() === konami[konamiIdx].toLowerCase()) {
-        konamiIdx++;
-        if (konamiIdx === konami.length) {
-          konamiIdx = 0;
-          triggerRiftTransition();
-          setD20Open(true);
+    const handleGlobalClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement | null;
+      if (target) {
+        const interactive = target.closest('button, a, [role="button"], input, select, textarea, .comic-border, .cursor-pointer');
+        if (interactive) {
+          sound.playClick();
         }
-      } else {
-        konamiIdx = 0;
       }
     };
 
-    window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    window.addEventListener('click', handleGlobalClick, { capture: true });
+    return () => window.removeEventListener('click', handleGlobalClick, { capture: true });
   }, []);
 
+  // Global Keyboard Easter Eggs (V for Venom Blast, W for THWIP)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger if user is actively typing in an input or textarea
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      if (e.key === 'v' || e.key === 'V') {
+        triggerVenom();
+      } else if (e.key === 'w' || e.key === 'W') {
+        sound.playThwip();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [triggerVenom]);
+
   return (
-    <div
-      className={`relative min-h-screen bg-[var(--c-void)] text-[var(--c-text)] selection:bg-red-700 selection:text-white overflow-x-hidden ${
-        isShaking ? 'animate-rift-shake' : ''
-      }`}
-    >
-      {/* Red Dimensional Flash Overlay */}
-      {showRiftFlash && <div className="rift-flash-overlay" />}
+    <div className="relative min-h-screen bg-void text-web font-sans selection:bg-spider selection:text-white">
+      {/* Visual background layers */}
+      <HalftoneBackground />
 
-      {/* Opening Intro Sequence */}
-      {!introDismissed && (
-        <HawkinsIntro onComplete={() => setIntroDismissed(true)} />
-      )}
-
-      {/* Atmospheric Overlays */}
-      <SporesCanvas />
-      <CRTOverlay />
+      {/* Interactive custom reticle cursor */}
       <CustomCursor />
 
-      {/* Navigation Header */}
-      <Navbar
-        onOpenAdmin={() => setAdminOpen(true)}
-        onOpenEasterEgg={handleOpenEasterEgg}
-        onOpenD20={() => setD20Open(true)}
-        onTriggerRiftTransition={triggerRiftTransition}
+      {/* Spider silk drops in from the top while the page is scrolled */}
+      <ScrollWebFall />
+
+      {/* Hanging Upside-Down Spider-Man (Miles Morales) in the top-left corner */}
+      <HangingSpiderman />
+
+      {/* Secret Suit Venom Discharge Overlay */}
+      <VenomBlastOverlay
+        active={venomActive}
+        onComplete={() => setVenomActive(false)}
       />
 
-      {/* Main Content Sections */}
-      <main className="relative">
-        <HeroSection
-          profile={profile}
-          onOpenEasterEgg={handleOpenEasterEgg}
-        />
-        <AboutSection profile={profile} certifications={certifications} />
-        <SkillsSection skillCategories={skills} />
-        <ProjectsSection projects={projects} />
+      {/* Top HUD Navigation */}
+      <Navbar onTriggerVenom={triggerVenom} />
 
-        {/* The Christmas Lights Wall Easter Egg Section */}
-        <ChristmasLightsWall
-          onTriggerRedFlash={() => {
-            setShowRiftFlash(true);
-            setIsShaking(true);
-            setTimeout(() => setIsShaking(false), 500);
-            setTimeout(() => setShowRiftFlash(false), 700);
-          }}
-        />
-
-        <TimelineSection education={education} experience={experience} />
+      {/* Main Experience Stream */}
+      <main className="relative z-10">
+        <HeroSection onTriggerVenom={triggerVenom} />
+        <AboutSection />
+        <SkillsSection />
+        <ProjectsSection />
+        <TimelineSection />
         <ContactSection />
       </main>
 
       {/* Footer */}
       <Footer />
-
-      {/* Hawkins Admin Mainframe Modal */}
-      <AdminTerminalModal
-        isOpen={adminOpen}
-        onClose={() => setAdminOpen(false)}
-      />
-
-      {/* D&D D20 Encounter Easter Egg Modal */}
-      <D20GameModal
-        isOpen={d20Open}
-        onClose={() => setD20Open(false)}
-        onTriggerRedFlash={() => {
-          setShowRiftFlash(true);
-          setIsShaking(true);
-          setTimeout(() => setIsShaking(false), 500);
-          setTimeout(() => setShowRiftFlash(false), 700);
-        }}
-      />
     </div>
   );
 }

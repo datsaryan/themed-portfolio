@@ -36,13 +36,13 @@
       finished downloading, or it can't cover the "site is slow to open"
       case at all. It resolves one of two ways:
 
-        - React mounts (see App.tsx dispatching 'portfolio:app-ready') before
-          READY_TIMEOUT_MS: the swing completes, she's caught, camera punches
-          in, letterbox bars retract, whole scene fades to the real site.
-        - Nothing fires within READY_TIMEOUT_MS (dead deploy, network died,
-          JS failed to parse, etc.): she falls past frame, hits the ground,
-          impact flash + shake, and a "failed to load" card with Retry
-          takes over.
+        - React's CinematicLoader (src/boot) paints and dispatches
+          'portfolio:boot-handoff': this splash steps aside and the real,
+          state-driven cinematic takes over.
+        - Nothing hands off within READY_TIMEOUT_MS (dead deploy, network
+          died, JS failed to parse, etc.): she falls past frame, hits the
+          ground, and a "failed to load" card with Retry takes over. This is
+          the last-resort safety net for when React itself never runs.
 
       Everything is original vector/gradient work — no imagery, no
       copyrighted character art, just stylised silhouettes rendered in the
@@ -540,9 +540,7 @@
         var retryBtn = document.getElementById('ps-retry');
         if (!loader) return;
 
-        var MIN_DISPLAY_MS = 2600;   // let the swing + catch actually read as a sequence
         var READY_TIMEOUT_MS = 12000; // beyond this, treat it as a failed load
-        var startedAt = Date.now();
         var settled = false;
 
         // Bars slide in immediately for the "cinematic mode" frame.
@@ -572,17 +570,14 @@
           }, 650);
         }
 
-        function succeed() {
+        // React's CinematicLoader has painted: it takes over from here, so this
+        // static splash just steps aside (the dark scene underneath is the same).
+        function handoff() {
           if (settled) return;
           settled = true;
           clearInterval(captionTimer);
           clearTimeout(failTimer);
-          var elapsed = Date.now() - startedAt;
-          var wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
-          setTimeout(function () {
-            loader.classList.add('ps-success');
-            setTimeout(hideLoader, 950);
-          }, wait);
+          hideLoader();
         }
 
         function fail() {
@@ -594,7 +589,7 @@
 
         var failTimer = setTimeout(fail, READY_TIMEOUT_MS);
 
-        window.addEventListener('portfolio:app-ready', succeed, { once: true });
+        window.addEventListener('portfolio:boot-handoff', handoff, { once: true });
 
         if (retryBtn) {
           retryBtn.addEventListener('click', function () {
