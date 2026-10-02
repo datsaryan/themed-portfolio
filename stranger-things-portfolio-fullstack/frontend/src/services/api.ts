@@ -1,112 +1,89 @@
-import {
-  ProfileData,
-  ProjectItem,
-  SkillCategory,
-  Certification,
-  EducationItem,
-  ExperienceItem,
-  ContactMessage,
-  AdminStats,
-  AuthResponse
-} from '../types/portfolio';
+// Thin client for the backend REST API. If VITE_API_BASE_URL isn't set, or the
+// backend isn't reachable, callers fall back to the static resumeData.ts
+// content — the site works standalone even with no backend deployed.
 
-const BASE_URL = '/api';
+const API_BASE = (import.meta.env.VITE_API_BASE_URL as string | undefined)?.replace(/\/$/, '');
 
-function getAuthHeaders(): HeadersInit {
-  const token = localStorage.getItem('stranger_token');
-  return {
-    'Content-Type': 'application/json',
-    ...(token ? { Authorization: `Bearer ${token}` } : {})
-  };
+export function isApiConfigured(): boolean {
+  return Boolean(API_BASE);
 }
 
-export async function fetchProfile(): Promise<ProfileData> {
-  const res = await fetch(`${BASE_URL}/profile`);
-  if (!res.ok) throw new Error(`Failed to fetch profile: ${res.statusText}`);
-  return res.json();
+export type FetchFailure = 'not-configured' | 'http' | 'network' | 'timeout' | 'aborted';
+export type FetchResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; reason: FetchFailure; status?: number };
+
+interface RequestOptions {
+  /** Caller-owned cancellation (e.g. a retry superseding this attempt). */
+  signal?: AbortSignal;
+  /** Hard cap so a hung backend can't hold the caller forever. */
+  timeoutMs?: number;
 }
 
-export async function fetchProjects(): Promise<ProjectItem[]> {
-  const res = await fetch(`${BASE_URL}/projects`);
-  if (!res.ok) throw new Error(`Failed to fetch projects: ${res.statusText}`);
-  return res.json();
+// Unlike getJson, this reports *why* a request failed, which the boot
+// cinematic needs to tell "backend is down" from "nothing to fetch".
+async function request<T>(path: string, opts: RequestOptions = {}): Promise<FetchResult<T>> {
+  if (!API_BASE) return { ok: false, reason: 'not-configured' };
+
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = opts.timeoutMs
+    ? setTimeout(() => { timedOut = true; controller.abort(); }, opts.timeoutMs)
+    : undefined;
+  const onCallerAbort = () => controller.abort();
+  opts.signal?.addEventListener('abort', onCallerAbort, { once: true });
+  if (opts.signal?.aborted) controller.abort();
+
+  try {
+    const res = await fetch(`${API_BASE}${path}`, { signal: controller.signal });
+    if (!res.ok) return { ok: false, reason: 'http', status: res.status };
+    return { ok: true, data: (await res.json()) as T };
+  } catch {
+    if (timedOut) return { ok: false, reason: 'timeout' };
+    if (controller.signal.aborted) return { ok: false, reason: 'aborted' };
+    return { ok: false, reason: 'network' };
+  } finally {
+    if (timer) clearTimeout(timer);
+    opts.signal?.removeEventListener('abort', onCallerAbort);
+  }
 }
 
-export async function fetchSkills(): Promise<SkillCategory[]> {
-  const res = await fetch(`${BASE_URL}/skills`);
-  if (!res.ok) throw new Error(`Failed to fetch skills: ${res.statusText}`);
-  return res.json();
+async function getJson<T>(path: string): Promise<T | null> {
+  const result = await request<T>(path);
+  if (result.ok) return result.data;
+  if (result.reason !== 'not-configured') {
+    console.warn(`[api] GET ${path} failed (${result.reason}), using static fallback`);
+  }
+  return null;
 }
 
-export async function fetchCertifications(): Promise<Certification[]> {
-  const res = await fetch(`${BASE_URL}/certifications`);
-  if (!res.ok) throw new Error(`Failed to fetch certifications: ${res.statusText}`);
-  return res.json();
-}
-
-export async function fetchEducation(): Promise<EducationItem[]> {
-  const res = await fetch(`${BASE_URL}/education`);
-  if (!res.ok) throw new Error(`Failed to fetch education: ${res.statusText}`);
-  return res.json();
-}
-
-export async function fetchExperience(): Promise<ExperienceItem[]> {
-  const res = await fetch(`${BASE_URL}/experience`);
-  if (!res.ok) throw new Error(`Failed to fetch experience: ${res.statusText}`);
-  return res.json();
-}
-
-export async function submitContactMessage(message: {
-  senderName: string;
-  senderEmail: string;
-  subject: string;
+export interface ContactPayload {
+  name: string;
+  email: string;
   message: string;
-}): Promise<{ id: number; status: string }> {
-  const res = await fetch(`${BASE_URL}/contact`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(message)
-  });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ message: res.statusText }));
-    throw new Error(err.message || 'Transmission failed');
+}
+
+export async function submitContactMessage(payload: ContactPayload): Promise<boolean> {
+  if (!API_BASE) return false;
+  // Cap how long the visitor waits before we fall back to the mailto flow.
+  // A free-tier backend cold start or a network hiccup should never leave
+  // the send button hanging indefinitely.
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8000);
+  try {
+    const res = await fetch(`${API_BASE}/api/contact`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+      signal: controller.signal,
+    });
+    return res.ok;
+  } catch (err) {
+    console.warn('[api] POST /api/contact failed', err);
+    return false;
+  } finally {
+    clearTimeout(timeout);
   }
-  return res.json();
 }
 
-export async function adminLogin(username: string, password: string): Promise<AuthResponse> {
-  const res = await fetch(`${BASE_URL}/auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
-  });
-  if (!res.ok) {
-    throw new Error('Access Denied: Invalid credentials');
-  }
-  const data: AuthResponse = await res.json();
-  localStorage.setItem('stranger_token', data.token);
-  return data;
-}
-
-export async function fetchAdminStats(): Promise<AdminStats> {
-  const res = await fetch(`${BASE_URL}/admin/stats`, {
-    headers: getAuthHeaders()
-  });
-  if (!res.ok) throw new Error(`Failed to fetch admin stats: ${res.statusText}`);
-  return res.json();
-}
-
-export async function fetchAdminTransmissions(): Promise<ContactMessage[]> {
-  const res = await fetch(`${BASE_URL}/admin/transmissions`, {
-    headers: getAuthHeaders()
-  });
-  if (!res.ok) throw new Error(`Failed to fetch transmissions: ${res.statusText}`);
-  return res.json();
-}
-
-export async function markTransmissionRead(id: number): Promise<void> {
-  await fetch(`${BASE_URL}/admin/transmissions/${id}/read`, {
-    method: 'PATCH',
-    headers: getAuthHeaders()
-  });
-}
+export const api = { getJson, request };

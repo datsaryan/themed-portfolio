@@ -1,0 +1,4828 @@
+diff --git a/miles-morales-portfolio-fullstack/frontend/index.html b/miles-morales-portfolio-fullstack/frontend/index.html
+index c81b711..7aba090 100644
+--- a/miles-morales-portfolio-fullstack/frontend/index.html
++++ b/miles-morales-portfolio-fullstack/frontend/index.html
+@@ -36,13 +36,13 @@
+       finished downloading, or it can't cover the "site is slow to open"
+       case at all. It resolves one of two ways:
+ 
+-        - React mounts (see App.tsx dispatching 'portfolio:app-ready') before
+-          READY_TIMEOUT_MS: the swing completes, she's caught, camera punches
+-          in, letterbox bars retract, whole scene fades to the real site.
+-        - Nothing fires within READY_TIMEOUT_MS (dead deploy, network died,
+-          JS failed to parse, etc.): she falls past frame, hits the ground,
+-          impact flash + shake, and a "failed to load" card with Retry
+-          takes over.
++        - React's CinematicLoader (src/boot) paints and dispatches
++          'portfolio:boot-handoff': this splash steps aside and the real,
++          state-driven cinematic takes over.
++        - Nothing hands off within READY_TIMEOUT_MS (dead deploy, network
++          died, JS failed to parse, etc.): she falls past frame, hits the
++          ground, and a "failed to load" card with Retry takes over. This is
++          the last-resort safety net for when React itself never runs.
+ 
+       Everything is original vector/gradient work — no imagery, no
+       copyrighted character art, just stylised silhouettes rendered in the
+@@ -540,9 +540,7 @@
+         var retryBtn = document.getElementById('ps-retry');
+         if (!loader) return;
+ 
+-        var MIN_DISPLAY_MS = 2600;   // let the swing + catch actually read as a sequence
+         var READY_TIMEOUT_MS = 12000; // beyond this, treat it as a failed load
+-        var startedAt = Date.now();
+         var settled = false;
+ 
+         // Bars slide in immediately for the "cinematic mode" frame.
+@@ -572,17 +570,14 @@
+           }, 650);
+         }
+ 
+-        function succeed() {
++        // React's CinematicLoader has painted: it takes over from here, so this
++        // static splash just steps aside (the dark scene underneath is the same).
++        function handoff() {
+           if (settled) return;
+           settled = true;
+           clearInterval(captionTimer);
+           clearTimeout(failTimer);
+-          var elapsed = Date.now() - startedAt;
+-          var wait = Math.max(0, MIN_DISPLAY_MS - elapsed);
+-          setTimeout(function () {
+-            loader.classList.add('ps-success');
+-            setTimeout(hideLoader, 950);
+-          }, wait);
++          hideLoader();
+         }
+ 
+         function fail() {
+@@ -594,7 +589,7 @@
+ 
+         var failTimer = setTimeout(fail, READY_TIMEOUT_MS);
+ 
+-        window.addEventListener('portfolio:app-ready', succeed, { once: true });
++        window.addEventListener('portfolio:boot-handoff', handoff, { once: true });
+ 
+         if (retryBtn) {
+           retryBtn.addEventListener('click', function () {
+diff --git a/miles-morales-portfolio-fullstack/frontend/package-lock.json b/miles-morales-portfolio-fullstack/frontend/package-lock.json
+index 73278e1..4c1564b 100644
+--- a/miles-morales-portfolio-fullstack/frontend/package-lock.json
++++ b/miles-morales-portfolio-fullstack/frontend/package-lock.json
+@@ -25,7 +25,8 @@
+         "postcss": "^8.4.49",
+         "tailwindcss": "^3.4.17",
+         "typescript": "^5.6.3",
+-        "vite": "^6.1.0"
++        "vite": "^6.1.0",
++        "vitest": "^2.1.9"
+       }
+     },
+     "node_modules/@alloc/quick-lru": {
+@@ -1335,6 +1336,92 @@
+         "vite": "^4.2.0 || ^5.0.0 || ^6.0.0 || ^7.0.0"
+       }
+     },
++    "node_modules/@vitest/expect": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/expect/-/expect-2.1.9.tgz",
++      "integrity": "sha512-UJCIkTBenHeKT1TTlKMJWy1laZewsRIzYighyYiJKZreqtdxSos/S1t+ktRMQWu2CKqaarrkeszJx1cgC5tGZw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/spy": "2.1.9",
++        "@vitest/utils": "2.1.9",
++        "chai": "^5.1.2",
++        "tinyrainbow": "^1.2.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/pretty-format": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/pretty-format/-/pretty-format-2.1.9.tgz",
++      "integrity": "sha512-KhRIdGV2U9HOUzxfiHmY8IFHTdqtOhIzCpd8WRdJiE7D/HUcZVD0EgQCVjm+Q9gkUXWgBvMmTtZgIG48wq7sOQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "tinyrainbow": "^1.2.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/runner": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/runner/-/runner-2.1.9.tgz",
++      "integrity": "sha512-ZXSSqTFIrzduD63btIfEyOmNcBmQvgOVsPNPe0jYtESiXkhd8u2erDLnMxmGrDCwHCCHE7hxwRDCT3pt0esT4g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/utils": "2.1.9",
++        "pathe": "^1.1.2"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/snapshot": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/snapshot/-/snapshot-2.1.9.tgz",
++      "integrity": "sha512-oBO82rEjsxLNJincVhLhaxxZdEtV0EFHMK5Kmx5sJ6H9L183dHECjiefOAdnqpIgT5eZwT04PoggUnW88vOBNQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/pretty-format": "2.1.9",
++        "magic-string": "^0.30.12",
++        "pathe": "^1.1.2"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/spy": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/spy/-/spy-2.1.9.tgz",
++      "integrity": "sha512-E1B35FwzXXTs9FHNK6bDszs7mtydNi5MIfUWpceJ8Xbfb1gBMscAnwLbEu+B44ed6W3XjL9/ehLPHR1fkf1KLQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "tinyspy": "^3.0.2"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
++    "node_modules/@vitest/utils": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/utils/-/utils-2.1.9.tgz",
++      "integrity": "sha512-v0psaMSkNJ3A2NMrUEHFRzJtDPFn+/VWZ5WxImB21T9fjucJRmS7xCS3ppEnARb9y11OAzaD+P2Ps+b+BGX5iQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/pretty-format": "2.1.9",
++        "loupe": "^3.1.2",
++        "tinyrainbow": "^1.2.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      }
++    },
+     "node_modules/any-promise": {
+       "version": "1.3.0",
+       "resolved": "https://registry.npmjs.org/any-promise/-/any-promise-1.3.0.tgz",
+@@ -1363,6 +1450,16 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/assertion-error": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/assertion-error/-/assertion-error-2.0.1.tgz",
++      "integrity": "sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      }
++    },
+     "node_modules/autoprefixer": {
+       "version": "10.6.0",
+       "resolved": "https://registry.npmjs.org/autoprefixer/-/autoprefixer-10.6.0.tgz",
+@@ -1473,6 +1570,16 @@
+         "node": "^6 || ^7 || ^8 || ^9 || ^10 || ^11 || ^12 || >=13.7"
+       }
+     },
++    "node_modules/cac": {
++      "version": "6.7.14",
++      "resolved": "https://registry.npmjs.org/cac/-/cac-6.7.14.tgz",
++      "integrity": "sha512-b6Ilus+c3RrdDk+JhLKUAQfzzgLEPy6wcXqS7f/xe1EETvsDP6GORG7SFuOs6cID5YkqchW/LXZbX5bc8j7ZcQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=8"
++      }
++    },
+     "node_modules/camelcase-css": {
+       "version": "2.0.1",
+       "resolved": "https://registry.npmjs.org/camelcase-css/-/camelcase-css-2.0.1.tgz",
+@@ -1514,6 +1621,33 @@
+         "url": "https://www.paypal.me/kirilvatev"
+       }
+     },
++    "node_modules/chai": {
++      "version": "5.3.3",
++      "resolved": "https://registry.npmjs.org/chai/-/chai-5.3.3.tgz",
++      "integrity": "sha512-4zNhdJD/iOjSH0A05ea+Ke6MU5mmpQcbQsSOkgdaUMJ9zTlDTD/GYlwohmIE2u0gaxHYiVHEn1Fw9mZ/ktJWgw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "assertion-error": "^2.0.1",
++        "check-error": "^2.1.1",
++        "deep-eql": "^5.0.1",
++        "loupe": "^3.1.0",
++        "pathval": "^2.0.0"
++      },
++      "engines": {
++        "node": ">=18"
++      }
++    },
++    "node_modules/check-error": {
++      "version": "2.1.3",
++      "resolved": "https://registry.npmjs.org/check-error/-/check-error-2.1.3.tgz",
++      "integrity": "sha512-PAJdDJusoxnwm1VwW07VWwUN1sl7smmC3OKggvndJFadxxDRyFJBX/ggnu/KE4kQAB7a3Dp8f/YXC1FlUprWmA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">= 16"
++      }
++    },
+     "node_modules/chokidar": {
+       "version": "3.6.0",
+       "resolved": "https://registry.npmjs.org/chokidar/-/chokidar-3.6.0.tgz",
+@@ -1616,6 +1750,16 @@
+         }
+       }
+     },
++    "node_modules/deep-eql": {
++      "version": "5.0.2",
++      "resolved": "https://registry.npmjs.org/deep-eql/-/deep-eql-5.0.2.tgz",
++      "integrity": "sha512-h5k/5U50IJJFpzfL6nO9jaaumfjO/f2NjK/oYB2Djzm4p9L+3T9qWpZqZ2hAbLPuuYq9wrU08WQyBTL5GbPk5Q==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=6"
++      }
++    },
+     "node_modules/didyoumean": {
+       "version": "1.2.2",
+       "resolved": "https://registry.npmjs.org/didyoumean/-/didyoumean-1.2.2.tgz",
+@@ -1647,6 +1791,13 @@
+         "node": ">= 0.4"
+       }
+     },
++    "node_modules/es-module-lexer": {
++      "version": "1.7.0",
++      "resolved": "https://registry.npmjs.org/es-module-lexer/-/es-module-lexer-1.7.0.tgz",
++      "integrity": "sha512-jEQoCwk8hyb2AZziIOLhDqpm5+2ww5uIE6lkO/6jcOCusfk6LhMHpXXfBLXTZ7Ydyt0j4VoUQv6uGNYbdW+kBA==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/esbuild": {
+       "version": "0.25.12",
+       "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.25.12.tgz",
+@@ -1699,6 +1850,26 @@
+         "node": ">=6"
+       }
+     },
++    "node_modules/estree-walker": {
++      "version": "3.0.3",
++      "resolved": "https://registry.npmjs.org/estree-walker/-/estree-walker-3.0.3.tgz",
++      "integrity": "sha512-7RUKfXgSMMkzt6ZuXmqapOurLGPPfgj6l9uRZ7lRGolvk0y2yocc35LdcxKC5PQZdn2DMqioAQ2NoWcrTKmm6g==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@types/estree": "^1.0.0"
++      }
++    },
++    "node_modules/expect-type": {
++      "version": "1.4.0",
++      "resolved": "https://registry.npmjs.org/expect-type/-/expect-type-1.4.0.tgz",
++      "integrity": "sha512-KfYbmpRm0VbLjEvVa9yGwCi9GI34xvi7A/HXYWQO65CSD2u3MczUJSuwXKFIxlGsgBQizV9q5J9NHj4VG0n+pA==",
++      "dev": true,
++      "license": "Apache-2.0",
++      "engines": {
++        "node": ">=12.0.0"
++      }
++    },
+     "node_modules/fast-glob": {
+       "version": "3.3.3",
+       "resolved": "https://registry.npmjs.org/fast-glob/-/fast-glob-3.3.3.tgz",
+@@ -1990,6 +2161,13 @@
+         "loose-envify": "cli.js"
+       }
+     },
++    "node_modules/loupe": {
++      "version": "3.2.1",
++      "resolved": "https://registry.npmjs.org/loupe/-/loupe-3.2.1.tgz",
++      "integrity": "sha512-CdzqowRJCeLU72bHvWqwRBBlLcMEtIvGrlvef74kMnV2AolS9Y8xUv1I0U/MNAWMhBlKIoyuEgoJ0t/bbwHbLQ==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/lru-cache": {
+       "version": "5.1.1",
+       "resolved": "https://registry.npmjs.org/lru-cache/-/lru-cache-5.1.1.tgz",
+@@ -2009,6 +2187,16 @@
+         "react": "^16.5.1 || ^17.0.0 || ^18.0.0 || ^19.0.0"
+       }
+     },
++    "node_modules/magic-string": {
++      "version": "0.30.21",
++      "resolved": "https://registry.npmjs.org/magic-string/-/magic-string-0.30.21.tgz",
++      "integrity": "sha512-vd2F4YUyEXKGcLHoq+TEyCjxueSeHnFxyyjNp80yg0XV4vUhnDer/lvvlqM/arB5bXQN5K2/3oinyCRyx8T2CQ==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@jridgewell/sourcemap-codec": "^1.5.5"
++      }
++    },
+     "node_modules/merge2": {
+       "version": "1.4.1",
+       "resolved": "https://registry.npmjs.org/merge2/-/merge2-1.4.1.tgz",
+@@ -2159,6 +2347,23 @@
+       "dev": true,
+       "license": "MIT"
+     },
++    "node_modules/pathe": {
++      "version": "1.1.2",
++      "resolved": "https://registry.npmjs.org/pathe/-/pathe-1.1.2.tgz",
++      "integrity": "sha512-whLdWMYL2TwI08hn8/ZqAbrVemu0LNaNNJZX73O6qaIdCTfXutsLhMkjdENX0qhsQ9uIimo4/aQOmXkoon2nDQ==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/pathval": {
++      "version": "2.0.1",
++      "resolved": "https://registry.npmjs.org/pathval/-/pathval-2.0.1.tgz",
++      "integrity": "sha512-//nshmD55c46FuFw26xV/xFAaB5HF9Xdap7HJBBnrKdAd6/GxDBaNA1870O79+9ueg61cZLSVc+OaFlfmObYVQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">= 14.16"
++      }
++    },
+     "node_modules/picocolors": {
+       "version": "1.1.1",
+       "resolved": "https://registry.npmjs.org/picocolors/-/picocolors-1.1.1.tgz",
+@@ -2550,6 +2755,13 @@
+         "semver": "bin/semver.js"
+       }
+     },
++    "node_modules/siginfo": {
++      "version": "2.0.0",
++      "resolved": "https://registry.npmjs.org/siginfo/-/siginfo-2.0.0.tgz",
++      "integrity": "sha512-ybx0WO1/8bSBLEWXZvEd7gMW3Sn3JFlW3TvX1nREbDLRNQNaeNN8WK0meBwPdAaOI7TtRRRJn/Es1zhrrCHu7g==",
++      "dev": true,
++      "license": "ISC"
++    },
+     "node_modules/source-map-js": {
+       "version": "1.2.1",
+       "resolved": "https://registry.npmjs.org/source-map-js/-/source-map-js-1.2.1.tgz",
+@@ -2560,6 +2772,20 @@
+         "node": ">=0.10.0"
+       }
+     },
++    "node_modules/stackback": {
++      "version": "0.0.2",
++      "resolved": "https://registry.npmjs.org/stackback/-/stackback-0.0.2.tgz",
++      "integrity": "sha512-1XMJE5fQo1jGH6Y/7ebnwPOBEkIEnT4QF32d5R1+VXdXveM0IBMJt8zfaxX1P3QhVwrYe+576+jkANtSS2mBbw==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/std-env": {
++      "version": "3.10.0",
++      "resolved": "https://registry.npmjs.org/std-env/-/std-env-3.10.0.tgz",
++      "integrity": "sha512-5GS12FdOZNliM5mAOxFRg7Ir0pWz8MdpYm6AY6VPkGpbA7ZzmbzNcBJQ0GPvvyWgcY7QAhCgf9Uy89I03faLkg==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/sucrase": {
+       "version": "3.35.1",
+       "resolved": "https://registry.npmjs.org/sucrase/-/sucrase-3.35.1.tgz",
+@@ -2667,6 +2893,20 @@
+         "node": ">=0.8"
+       }
+     },
++    "node_modules/tinybench": {
++      "version": "2.9.0",
++      "resolved": "https://registry.npmjs.org/tinybench/-/tinybench-2.9.0.tgz",
++      "integrity": "sha512-0+DUvqWMValLmha6lr4kD8iAMK1HzV0/aKnCtWb9v9641TnP/MFb7Pc2bxoxQjTXAErryXVgUOfv2YqNllqGeg==",
++      "dev": true,
++      "license": "MIT"
++    },
++    "node_modules/tinyexec": {
++      "version": "0.3.2",
++      "resolved": "https://registry.npmjs.org/tinyexec/-/tinyexec-0.3.2.tgz",
++      "integrity": "sha512-KQQR9yN7R5+OSwaK0XQoj22pwHoTlgYqmUscPYoknOoWCWfj/5/ABTMRi69FrKU5ffPVh5QcFikpWJI/P1ocHA==",
++      "dev": true,
++      "license": "MIT"
++    },
+     "node_modules/tinyglobby": {
+       "version": "0.2.17",
+       "resolved": "https://registry.npmjs.org/tinyglobby/-/tinyglobby-0.2.17.tgz",
+@@ -2715,6 +2955,36 @@
+         "url": "https://github.com/sponsors/jonschlinkert"
+       }
+     },
++    "node_modules/tinypool": {
++      "version": "1.1.1",
++      "resolved": "https://registry.npmjs.org/tinypool/-/tinypool-1.1.1.tgz",
++      "integrity": "sha512-Zba82s87IFq9A9XmjiX5uZA/ARWDrB03OHlq+Vw1fSdt0I+4/Kutwy8BP4Y/y/aORMo61FQ0vIb5j44vSo5Pkg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": "^18.0.0 || >=20.0.0"
++      }
++    },
++    "node_modules/tinyrainbow": {
++      "version": "1.2.0",
++      "resolved": "https://registry.npmjs.org/tinyrainbow/-/tinyrainbow-1.2.0.tgz",
++      "integrity": "sha512-weEDEq7Z5eTHPDh4xjX789+fHfF+P8boiFB+0vbWzpbnbsEr/GRaohi/uMKxg8RZMXnl1ItAi/IUHWMsjDV7kQ==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=14.0.0"
++      }
++    },
++    "node_modules/tinyspy": {
++      "version": "3.0.2",
++      "resolved": "https://registry.npmjs.org/tinyspy/-/tinyspy-3.0.2.tgz",
++      "integrity": "sha512-n1cw8k1k0x4pgA2+9XrOkFydTerNcJ1zWCO5Nn9scWHTD+5tp8dghT2x1uduQePZTZgd3Tupf+x9BxJjeJi77Q==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=14.0.0"
++      }
++    },
+     "node_modules/to-regex-range": {
+       "version": "5.0.1",
+       "resolved": "https://registry.npmjs.org/to-regex-range/-/to-regex-range-5.0.1.tgz",
+@@ -2868,35 +3138,1148 @@
+         }
+       }
+     },
+-    "node_modules/vite/node_modules/fdir": {
+-      "version": "6.5.0",
+-      "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
+-      "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
++    "node_modules/vite-node": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/vite-node/-/vite-node-2.1.9.tgz",
++      "integrity": "sha512-AM9aQ/IPrW/6ENLQg3AGY4K1N2TGZdR5e4gu/MmmR2xR3Ll1+dib+nook92g4TV3PXVyeyxdWwtaCAiUL0hMxA==",
+       "dev": true,
+       "license": "MIT",
+-      "engines": {
+-        "node": ">=12.0.0"
++      "dependencies": {
++        "cac": "^6.7.14",
++        "debug": "^4.3.7",
++        "es-module-lexer": "^1.5.4",
++        "pathe": "^1.1.2",
++        "vite": "^5.0.0"
+       },
+-      "peerDependencies": {
+-        "picomatch": "^3 || ^4"
++      "bin": {
++        "vite-node": "vite-node.mjs"
+       },
+-      "peerDependenciesMeta": {
+-        "picomatch": {
+-          "optional": true
+-        }
++      "engines": {
++        "node": "^18.0.0 || >=20.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
+       }
+     },
+-    "node_modules/vite/node_modules/picomatch": {
+-      "version": "4.0.7",
+-      "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz",
+-      "integrity": "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==",
++    "node_modules/vite-node/node_modules/@esbuild/aix-ppc64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.21.5.tgz",
++      "integrity": "sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==",
++      "cpu": [
++        "ppc64"
++      ],
+       "dev": true,
+       "license": "MIT",
++      "optional": true,
++      "os": [
++        "aix"
++      ],
+       "engines": {
+         "node": ">=12"
+-      },
+-      "funding": {
+-        "url": "https://github.com/sponsors/jonschlinkert"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/android-arm": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.21.5.tgz",
++      "integrity": "sha512-vCPvzSjpPHEi1siZdlvAlsPxXl7WbOVUBBAowWug4rJHb68Ox8KualB+1ocNvT5fjv6wpkX6o/iEpbDrf68zcg==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/android-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.21.5.tgz",
++      "integrity": "sha512-c0uX9VAUBQ7dTDCjq+wdyGLowMdtR/GoC2U5IYk/7D1H1JYC0qseD7+11iMP2mRLN9RcCMRcjC4YMclCzGwS/A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/android-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.21.5.tgz",
++      "integrity": "sha512-D7aPRUUNHRBwHxzxRvp856rjUHRFW1SdQATKXH2hqA0kAZb1hKmi02OpYRacl0TxIGz/ZmXWlbZgjwWYaCakTA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/darwin-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.21.5.tgz",
++      "integrity": "sha512-DwqXqZyuk5AiWWf3UfLiRDJ5EDd49zg6O9wclZ7kUMv2WRFr4HKjXp/5t8JZ11QbQfUS6/cRCKGwYhtNAY88kQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/darwin-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.21.5.tgz",
++      "integrity": "sha512-se/JjF8NlmKVG4kNIuyWMV/22ZaerB+qaSi5MdrXtd6R08kvs2qCN4C09miupktDitvh8jRFflwGFBQcxZRjbw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/freebsd-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.21.5.tgz",
++      "integrity": "sha512-5JcRxxRDUJLX8JXp/wcBCy3pENnCgBR9bN6JsY4OmhfUtIHe3ZW0mawA7+RDAcMLrMIZaf03NlQiX9DGyB8h4g==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/freebsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.21.5.tgz",
++      "integrity": "sha512-J95kNBj1zkbMXtHVH29bBriQygMXqoVQOQYA+ISs0/2l3T9/kj42ow2mpqerRBxDJnmkUDCaQT/dfNXWX/ZZCQ==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-arm": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.21.5.tgz",
++      "integrity": "sha512-bPb5AHZtbeNGjCKVZ9UGqGwo8EUu4cLq68E95A53KlxAPRmUyYv2D6F0uUI65XisGOL1hBP5mTronbgo+0bFcA==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.21.5.tgz",
++      "integrity": "sha512-ibKvmyYzKsBeX8d8I7MH/TMfWDXBF3db4qM6sy+7re0YXya+K1cem3on9XgdT2EQGMu4hQyZhan7TeQ8XkGp4Q==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-ia32": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.21.5.tgz",
++      "integrity": "sha512-YvjXDqLRqPDl2dvRODYmmhz4rPeVKYvppfGYKSNGdyZkA01046pLWyRKKI3ax8fbJoK5QbxblURkwK/MWY18Tg==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-loong64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.21.5.tgz",
++      "integrity": "sha512-uHf1BmMG8qEvzdrzAqg2SIG/02+4/DHB6a9Kbya0XDvwDEKCoC8ZRWI5JJvNdUjtciBGFQ5PuBlpEOXQj+JQSg==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-mips64el": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.21.5.tgz",
++      "integrity": "sha512-IajOmO+KJK23bj52dFSNCMsz1QP1DqM6cwLUv3W1QwyxkyIWecfafnI555fvSGqEKwjMXVLokcV5ygHW5b3Jbg==",
++      "cpu": [
++        "mips64el"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-ppc64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.21.5.tgz",
++      "integrity": "sha512-1hHV/Z4OEfMwpLO8rp7CvlhBDnjsC3CttJXIhBi+5Aj5r+MBvy4egg7wCbe//hSsT+RvDAG7s81tAvpL2XAE4w==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-riscv64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.21.5.tgz",
++      "integrity": "sha512-2HdXDMd9GMgTGrPWnJzP2ALSokE/0O5HhTUvWIbD3YdjME8JwvSCnNGBnTThKGEB91OZhzrJ4qIIxk/SBmyDDA==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-s390x": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.21.5.tgz",
++      "integrity": "sha512-zus5sxzqBJD3eXxwvjN1yQkRepANgxE9lgOW2qLnmr8ikMTphkjgXu1HR01K4FJg8h1kEEDAqDcZQtbrRnB41A==",
++      "cpu": [
++        "s390x"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/linux-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.21.5.tgz",
++      "integrity": "sha512-1rYdTpyv03iycF1+BhzrzQJCdOuAOtaqHTWJZCWvijKD2N5Xu0TtVC8/+1faWqcP9iBCWOmjmhoH94dH82BxPQ==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/netbsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.21.5.tgz",
++      "integrity": "sha512-Woi2MXzXjMULccIwMnLciyZH4nCIMpWQAs049KEeMvOcNADVxo0UBIQPfSmxB3CWKedngg7sWZdLvLczpe0tLg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/openbsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.21.5.tgz",
++      "integrity": "sha512-HLNNw99xsvx12lFBUwoT8EVCsSvRNDVxNpjZ7bPn947b8gJPzeHWyNVhFsaerc0n3TsbOINvRP2byTZ5LKezow==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/sunos-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.21.5.tgz",
++      "integrity": "sha512-6+gjmFpfy0BHU5Tpptkuh8+uw3mnrvgs+dSPQXQOv3ekbordwnzTVEb4qnIvQcYXq6gzkyTnoZ9dZG+D4garKg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "sunos"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/win32-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.21.5.tgz",
++      "integrity": "sha512-Z0gOTd75VvXqyq7nsl93zwahcTROgqvuAcYDUr+vOv8uHhNSKROyU961kgtCD1e95IqPKSQKH7tBTslnS3tA8A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/win32-ia32": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.21.5.tgz",
++      "integrity": "sha512-SWXFF1CL2RVNMaVs+BBClwtfZSvDgtL//G/smwAc5oVK/UPu2Gu9tIaRgFmYFFKrmg3SyAjSrElf0TiJ1v8fYA==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/@esbuild/win32-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.5.tgz",
++      "integrity": "sha512-tQd/1efJuzPC6rCFwEvLtci/xNFcTZknmXs98FYDfGE4wP9ClFV98nyKrzJKVPMhdDnjzLhdUyMX4PsQAPjwIw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vite-node/node_modules/esbuild": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.21.5.tgz",
++      "integrity": "sha512-mg3OPMV4hXywwpoDxu3Qda5xCKQi+vCTZq8S9J/EpkhB2HzKXq4SNFZE3+NK93JYxc8VMSep+lOUSC/RVKaBqw==",
++      "dev": true,
++      "hasInstallScript": true,
++      "license": "MIT",
++      "bin": {
++        "esbuild": "bin/esbuild"
++      },
++      "engines": {
++        "node": ">=12"
++      },
++      "optionalDependencies": {
++        "@esbuild/aix-ppc64": "0.21.5",
++        "@esbuild/android-arm": "0.21.5",
++        "@esbuild/android-arm64": "0.21.5",
++        "@esbuild/android-x64": "0.21.5",
++        "@esbuild/darwin-arm64": "0.21.5",
++        "@esbuild/darwin-x64": "0.21.5",
++        "@esbuild/freebsd-arm64": "0.21.5",
++        "@esbuild/freebsd-x64": "0.21.5",
++        "@esbuild/linux-arm": "0.21.5",
++        "@esbuild/linux-arm64": "0.21.5",
++        "@esbuild/linux-ia32": "0.21.5",
++        "@esbuild/linux-loong64": "0.21.5",
++        "@esbuild/linux-mips64el": "0.21.5",
++        "@esbuild/linux-ppc64": "0.21.5",
++        "@esbuild/linux-riscv64": "0.21.5",
++        "@esbuild/linux-s390x": "0.21.5",
++        "@esbuild/linux-x64": "0.21.5",
++        "@esbuild/netbsd-x64": "0.21.5",
++        "@esbuild/openbsd-x64": "0.21.5",
++        "@esbuild/sunos-x64": "0.21.5",
++        "@esbuild/win32-arm64": "0.21.5",
++        "@esbuild/win32-ia32": "0.21.5",
++        "@esbuild/win32-x64": "0.21.5"
++      }
++    },
++    "node_modules/vite-node/node_modules/vite": {
++      "version": "5.4.21",
++      "resolved": "https://registry.npmjs.org/vite/-/vite-5.4.21.tgz",
++      "integrity": "sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "esbuild": "^0.21.3",
++        "postcss": "^8.4.43",
++        "rollup": "^4.20.0"
++      },
++      "bin": {
++        "vite": "bin/vite.js"
++      },
++      "engines": {
++        "node": "^18.0.0 || >=20.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/vitejs/vite?sponsor=1"
++      },
++      "optionalDependencies": {
++        "fsevents": "~2.3.3"
++      },
++      "peerDependencies": {
++        "@types/node": "^18.0.0 || >=20.0.0",
++        "less": "*",
++        "lightningcss": "^1.21.0",
++        "sass": "*",
++        "sass-embedded": "*",
++        "stylus": "*",
++        "sugarss": "*",
++        "terser": "^5.4.0"
++      },
++      "peerDependenciesMeta": {
++        "@types/node": {
++          "optional": true
++        },
++        "less": {
++          "optional": true
++        },
++        "lightningcss": {
++          "optional": true
++        },
++        "sass": {
++          "optional": true
++        },
++        "sass-embedded": {
++          "optional": true
++        },
++        "stylus": {
++          "optional": true
++        },
++        "sugarss": {
++          "optional": true
++        },
++        "terser": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/vite/node_modules/fdir": {
++      "version": "6.5.0",
++      "resolved": "https://registry.npmjs.org/fdir/-/fdir-6.5.0.tgz",
++      "integrity": "sha512-tIbYtZbucOs0BRGqPJkshJUYdL+SDH7dVM8gjy+ERp3WAUjLEFJE+02kanyHtwjWOnwrKYBiwAmM0p4kLJAnXg==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=12.0.0"
++      },
++      "peerDependencies": {
++        "picomatch": "^3 || ^4"
++      },
++      "peerDependenciesMeta": {
++        "picomatch": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/vite/node_modules/picomatch": {
++      "version": "4.0.7",
++      "resolved": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.7.tgz",
++      "integrity": "sha512-qcJu88Q2IWqJsDD529JKMdwGm/dvInW4HvQnRwiH9JtihJvzGOscDtHE3x1pBKeUOTysQ8kVmLnJ2kJu7yhcGA==",
++      "dev": true,
++      "license": "MIT",
++      "engines": {
++        "node": ">=12"
++      },
++      "funding": {
++        "url": "https://github.com/sponsors/jonschlinkert"
++      }
++    },
++    "node_modules/vitest": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/vitest/-/vitest-2.1.9.tgz",
++      "integrity": "sha512-MSmPM9REYqDGBI8439mA4mWhV5sKmDlBKWIYbA3lRb2PTHACE0mgKwA8yQ2xq9vxDTuk4iPrECBAEW2aoFXY0Q==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/expect": "2.1.9",
++        "@vitest/mocker": "2.1.9",
++        "@vitest/pretty-format": "^2.1.9",
++        "@vitest/runner": "2.1.9",
++        "@vitest/snapshot": "2.1.9",
++        "@vitest/spy": "2.1.9",
++        "@vitest/utils": "2.1.9",
++        "chai": "^5.1.2",
++        "debug": "^4.3.7",
++        "expect-type": "^1.1.0",
++        "magic-string": "^0.30.12",
++        "pathe": "^1.1.2",
++        "std-env": "^3.8.0",
++        "tinybench": "^2.9.0",
++        "tinyexec": "^0.3.1",
++        "tinypool": "^1.0.1",
++        "tinyrainbow": "^1.2.0",
++        "vite": "^5.0.0",
++        "vite-node": "2.1.9",
++        "why-is-node-running": "^2.3.0"
++      },
++      "bin": {
++        "vitest": "vitest.mjs"
++      },
++      "engines": {
++        "node": "^18.0.0 || >=20.0.0"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      },
++      "peerDependencies": {
++        "@edge-runtime/vm": "*",
++        "@types/node": "^18.0.0 || >=20.0.0",
++        "@vitest/browser": "2.1.9",
++        "@vitest/ui": "2.1.9",
++        "happy-dom": "*",
++        "jsdom": "*"
++      },
++      "peerDependenciesMeta": {
++        "@edge-runtime/vm": {
++          "optional": true
++        },
++        "@types/node": {
++          "optional": true
++        },
++        "@vitest/browser": {
++          "optional": true
++        },
++        "@vitest/ui": {
++          "optional": true
++        },
++        "happy-dom": {
++          "optional": true
++        },
++        "jsdom": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/aix-ppc64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/aix-ppc64/-/aix-ppc64-0.21.5.tgz",
++      "integrity": "sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "aix"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/android-arm": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm/-/android-arm-0.21.5.tgz",
++      "integrity": "sha512-vCPvzSjpPHEi1siZdlvAlsPxXl7WbOVUBBAowWug4rJHb68Ox8KualB+1ocNvT5fjv6wpkX6o/iEpbDrf68zcg==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/android-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-arm64/-/android-arm64-0.21.5.tgz",
++      "integrity": "sha512-c0uX9VAUBQ7dTDCjq+wdyGLowMdtR/GoC2U5IYk/7D1H1JYC0qseD7+11iMP2mRLN9RcCMRcjC4YMclCzGwS/A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/android-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/android-x64/-/android-x64-0.21.5.tgz",
++      "integrity": "sha512-D7aPRUUNHRBwHxzxRvp856rjUHRFW1SdQATKXH2hqA0kAZb1hKmi02OpYRacl0TxIGz/ZmXWlbZgjwWYaCakTA==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "android"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/darwin-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-arm64/-/darwin-arm64-0.21.5.tgz",
++      "integrity": "sha512-DwqXqZyuk5AiWWf3UfLiRDJ5EDd49zg6O9wclZ7kUMv2WRFr4HKjXp/5t8JZ11QbQfUS6/cRCKGwYhtNAY88kQ==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/darwin-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/darwin-x64/-/darwin-x64-0.21.5.tgz",
++      "integrity": "sha512-se/JjF8NlmKVG4kNIuyWMV/22ZaerB+qaSi5MdrXtd6R08kvs2qCN4C09miupktDitvh8jRFflwGFBQcxZRjbw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "darwin"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/freebsd-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-arm64/-/freebsd-arm64-0.21.5.tgz",
++      "integrity": "sha512-5JcRxxRDUJLX8JXp/wcBCy3pENnCgBR9bN6JsY4OmhfUtIHe3ZW0mawA7+RDAcMLrMIZaf03NlQiX9DGyB8h4g==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/freebsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/freebsd-x64/-/freebsd-x64-0.21.5.tgz",
++      "integrity": "sha512-J95kNBj1zkbMXtHVH29bBriQygMXqoVQOQYA+ISs0/2l3T9/kj42ow2mpqerRBxDJnmkUDCaQT/dfNXWX/ZZCQ==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "freebsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-arm": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm/-/linux-arm-0.21.5.tgz",
++      "integrity": "sha512-bPb5AHZtbeNGjCKVZ9UGqGwo8EUu4cLq68E95A53KlxAPRmUyYv2D6F0uUI65XisGOL1hBP5mTronbgo+0bFcA==",
++      "cpu": [
++        "arm"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-arm64/-/linux-arm64-0.21.5.tgz",
++      "integrity": "sha512-ibKvmyYzKsBeX8d8I7MH/TMfWDXBF3db4qM6sy+7re0YXya+K1cem3on9XgdT2EQGMu4hQyZhan7TeQ8XkGp4Q==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-ia32": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ia32/-/linux-ia32-0.21.5.tgz",
++      "integrity": "sha512-YvjXDqLRqPDl2dvRODYmmhz4rPeVKYvppfGYKSNGdyZkA01046pLWyRKKI3ax8fbJoK5QbxblURkwK/MWY18Tg==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-loong64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-loong64/-/linux-loong64-0.21.5.tgz",
++      "integrity": "sha512-uHf1BmMG8qEvzdrzAqg2SIG/02+4/DHB6a9Kbya0XDvwDEKCoC8ZRWI5JJvNdUjtciBGFQ5PuBlpEOXQj+JQSg==",
++      "cpu": [
++        "loong64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-mips64el": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-mips64el/-/linux-mips64el-0.21.5.tgz",
++      "integrity": "sha512-IajOmO+KJK23bj52dFSNCMsz1QP1DqM6cwLUv3W1QwyxkyIWecfafnI555fvSGqEKwjMXVLokcV5ygHW5b3Jbg==",
++      "cpu": [
++        "mips64el"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-ppc64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-ppc64/-/linux-ppc64-0.21.5.tgz",
++      "integrity": "sha512-1hHV/Z4OEfMwpLO8rp7CvlhBDnjsC3CttJXIhBi+5Aj5r+MBvy4egg7wCbe//hSsT+RvDAG7s81tAvpL2XAE4w==",
++      "cpu": [
++        "ppc64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-riscv64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-riscv64/-/linux-riscv64-0.21.5.tgz",
++      "integrity": "sha512-2HdXDMd9GMgTGrPWnJzP2ALSokE/0O5HhTUvWIbD3YdjME8JwvSCnNGBnTThKGEB91OZhzrJ4qIIxk/SBmyDDA==",
++      "cpu": [
++        "riscv64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-s390x": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-s390x/-/linux-s390x-0.21.5.tgz",
++      "integrity": "sha512-zus5sxzqBJD3eXxwvjN1yQkRepANgxE9lgOW2qLnmr8ikMTphkjgXu1HR01K4FJg8h1kEEDAqDcZQtbrRnB41A==",
++      "cpu": [
++        "s390x"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/linux-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/linux-x64/-/linux-x64-0.21.5.tgz",
++      "integrity": "sha512-1rYdTpyv03iycF1+BhzrzQJCdOuAOtaqHTWJZCWvijKD2N5Xu0TtVC8/+1faWqcP9iBCWOmjmhoH94dH82BxPQ==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "linux"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/netbsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/netbsd-x64/-/netbsd-x64-0.21.5.tgz",
++      "integrity": "sha512-Woi2MXzXjMULccIwMnLciyZH4nCIMpWQAs049KEeMvOcNADVxo0UBIQPfSmxB3CWKedngg7sWZdLvLczpe0tLg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "netbsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/openbsd-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/openbsd-x64/-/openbsd-x64-0.21.5.tgz",
++      "integrity": "sha512-HLNNw99xsvx12lFBUwoT8EVCsSvRNDVxNpjZ7bPn947b8gJPzeHWyNVhFsaerc0n3TsbOINvRP2byTZ5LKezow==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "openbsd"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/sunos-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/sunos-x64/-/sunos-x64-0.21.5.tgz",
++      "integrity": "sha512-6+gjmFpfy0BHU5Tpptkuh8+uw3mnrvgs+dSPQXQOv3ekbordwnzTVEb4qnIvQcYXq6gzkyTnoZ9dZG+D4garKg==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "sunos"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/win32-arm64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-arm64/-/win32-arm64-0.21.5.tgz",
++      "integrity": "sha512-Z0gOTd75VvXqyq7nsl93zwahcTROgqvuAcYDUr+vOv8uHhNSKROyU961kgtCD1e95IqPKSQKH7tBTslnS3tA8A==",
++      "cpu": [
++        "arm64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/win32-ia32": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-ia32/-/win32-ia32-0.21.5.tgz",
++      "integrity": "sha512-SWXFF1CL2RVNMaVs+BBClwtfZSvDgtL//G/smwAc5oVK/UPu2Gu9tIaRgFmYFFKrmg3SyAjSrElf0TiJ1v8fYA==",
++      "cpu": [
++        "ia32"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@esbuild/win32-x64": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/@esbuild/win32-x64/-/win32-x64-0.21.5.tgz",
++      "integrity": "sha512-tQd/1efJuzPC6rCFwEvLtci/xNFcTZknmXs98FYDfGE4wP9ClFV98nyKrzJKVPMhdDnjzLhdUyMX4PsQAPjwIw==",
++      "cpu": [
++        "x64"
++      ],
++      "dev": true,
++      "license": "MIT",
++      "optional": true,
++      "os": [
++        "win32"
++      ],
++      "engines": {
++        "node": ">=12"
++      }
++    },
++    "node_modules/vitest/node_modules/@vitest/mocker": {
++      "version": "2.1.9",
++      "resolved": "https://registry.npmjs.org/@vitest/mocker/-/mocker-2.1.9.tgz",
++      "integrity": "sha512-tVL6uJgoUdi6icpxmdrn5YNo3g3Dxv+IHJBr0GXHaEdTcw3F+cPKnsXFhli6nO+f/6SDKPHEK1UN+k+TQv0Ehg==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "@vitest/spy": "2.1.9",
++        "estree-walker": "^3.0.3",
++        "magic-string": "^0.30.12"
++      },
++      "funding": {
++        "url": "https://opencollective.com/vitest"
++      },
++      "peerDependencies": {
++        "msw": "^2.4.9",
++        "vite": "^5.0.0"
++      },
++      "peerDependenciesMeta": {
++        "msw": {
++          "optional": true
++        },
++        "vite": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/vitest/node_modules/esbuild": {
++      "version": "0.21.5",
++      "resolved": "https://registry.npmjs.org/esbuild/-/esbuild-0.21.5.tgz",
++      "integrity": "sha512-mg3OPMV4hXywwpoDxu3Qda5xCKQi+vCTZq8S9J/EpkhB2HzKXq4SNFZE3+NK93JYxc8VMSep+lOUSC/RVKaBqw==",
++      "dev": true,
++      "hasInstallScript": true,
++      "license": "MIT",
++      "bin": {
++        "esbuild": "bin/esbuild"
++      },
++      "engines": {
++        "node": ">=12"
++      },
++      "optionalDependencies": {
++        "@esbuild/aix-ppc64": "0.21.5",
++        "@esbuild/android-arm": "0.21.5",
++        "@esbuild/android-arm64": "0.21.5",
++        "@esbuild/android-x64": "0.21.5",
++        "@esbuild/darwin-arm64": "0.21.5",
++        "@esbuild/darwin-x64": "0.21.5",
++        "@esbuild/freebsd-arm64": "0.21.5",
++        "@esbuild/freebsd-x64": "0.21.5",
++        "@esbuild/linux-arm": "0.21.5",
++        "@esbuild/linux-arm64": "0.21.5",
++        "@esbuild/linux-ia32": "0.21.5",
++        "@esbuild/linux-loong64": "0.21.5",
++        "@esbuild/linux-mips64el": "0.21.5",
++        "@esbuild/linux-ppc64": "0.21.5",
++        "@esbuild/linux-riscv64": "0.21.5",
++        "@esbuild/linux-s390x": "0.21.5",
++        "@esbuild/linux-x64": "0.21.5",
++        "@esbuild/netbsd-x64": "0.21.5",
++        "@esbuild/openbsd-x64": "0.21.5",
++        "@esbuild/sunos-x64": "0.21.5",
++        "@esbuild/win32-arm64": "0.21.5",
++        "@esbuild/win32-ia32": "0.21.5",
++        "@esbuild/win32-x64": "0.21.5"
++      }
++    },
++    "node_modules/vitest/node_modules/vite": {
++      "version": "5.4.21",
++      "resolved": "https://registry.npmjs.org/vite/-/vite-5.4.21.tgz",
++      "integrity": "sha512-o5a9xKjbtuhY6Bi5S3+HvbRERmouabWbyUcpXXUA1u+GNUKoROi9byOJ8M0nHbHYHkYICiMlqxkg1KkYmm25Sw==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "esbuild": "^0.21.3",
++        "postcss": "^8.4.43",
++        "rollup": "^4.20.0"
++      },
++      "bin": {
++        "vite": "bin/vite.js"
++      },
++      "engines": {
++        "node": "^18.0.0 || >=20.0.0"
++      },
++      "funding": {
++        "url": "https://github.com/vitejs/vite?sponsor=1"
++      },
++      "optionalDependencies": {
++        "fsevents": "~2.3.3"
++      },
++      "peerDependencies": {
++        "@types/node": "^18.0.0 || >=20.0.0",
++        "less": "*",
++        "lightningcss": "^1.21.0",
++        "sass": "*",
++        "sass-embedded": "*",
++        "stylus": "*",
++        "sugarss": "*",
++        "terser": "^5.4.0"
++      },
++      "peerDependenciesMeta": {
++        "@types/node": {
++          "optional": true
++        },
++        "less": {
++          "optional": true
++        },
++        "lightningcss": {
++          "optional": true
++        },
++        "sass": {
++          "optional": true
++        },
++        "sass-embedded": {
++          "optional": true
++        },
++        "stylus": {
++          "optional": true
++        },
++        "sugarss": {
++          "optional": true
++        },
++        "terser": {
++          "optional": true
++        }
++      }
++    },
++    "node_modules/why-is-node-running": {
++      "version": "2.3.0",
++      "resolved": "https://registry.npmjs.org/why-is-node-running/-/why-is-node-running-2.3.0.tgz",
++      "integrity": "sha512-hUrmaWBdVDcxvYqnyh09zunKzROWjbZTiNy8dBEjkS7ehEDQibXJ7XvlmtbwuTclUiIyN+CyXQD4Vmko8fNm8w==",
++      "dev": true,
++      "license": "MIT",
++      "dependencies": {
++        "siginfo": "^2.0.0",
++        "stackback": "0.0.2"
++      },
++      "bin": {
++        "why-is-node-running": "cli.js"
++      },
++      "engines": {
++        "node": ">=8"
+       }
+     },
+     "node_modules/yallist": {
+diff --git a/miles-morales-portfolio-fullstack/frontend/package.json b/miles-morales-portfolio-fullstack/frontend/package.json
+index d1fc0d8..f570a21 100644
+--- a/miles-morales-portfolio-fullstack/frontend/package.json
++++ b/miles-morales-portfolio-fullstack/frontend/package.json
+@@ -6,7 +6,8 @@
+   "scripts": {
+     "dev": "vite",
+     "build": "tsc && vite build",
+-    "preview": "vite preview"
++    "preview": "vite preview",
++    "test": "vitest run"
+   },
+   "dependencies": {
+     "canvas-confetti": "^1.9.4",
+@@ -26,6 +27,7 @@
+     "postcss": "^8.4.49",
+     "tailwindcss": "^3.4.17",
+     "typescript": "^5.6.3",
+-    "vite": "^6.1.0"
++    "vite": "^6.1.0",
++    "vitest": "^2.1.9"
+   }
+ }
+diff --git a/miles-morales-portfolio-fullstack/frontend/scripts/mock-api.mjs b/miles-morales-portfolio-fullstack/frontend/scripts/mock-api.mjs
+new file mode 100644
+index 0000000..b2f2cac
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/scripts/mock-api.mjs
+@@ -0,0 +1,32 @@
++// Tiny mock backend for exercising the boot cinematic's load paths without
++// running the Spring app. Usage:  node scripts/mock-api.mjs [port]
++// Switch behaviour live:  curl localhost:8080/__mode/ok|500|slow|hang|down
++//   ok   - valid responses          500  - every endpoint returns HTTP 500
++//   slow - valid, but after 4s      hang - never responds
++//   down - destroys the socket (what a dead backend looks like)
++import http from 'node:http';
++
++const port = Number(process.argv[2] ?? 8080);
++let mode = 'ok';
++
++const profile = {
++  name: 'Aryan Singh', heroCodename: 'MILES', title: 'Full Stack Engineer', tagline: 'tagline',
++  phone: '+91-0000000000', email: 'a@example.com', location: 'Indore, IN', status: 'Open to work',
++  githubUrl: 'https://github.com/datsaryan', linkedinUrl: 'https://linkedin.com', leetcodeUrl: 'https://leetcode.com',
++  resumePdfPath: '/Aryan_FullStack_Resume.pdf', summary: 'Live from the mock backend.',
++  institution: 'IET DAVV', degree: 'B.Tech', cgpa: '8.0', timeline: '2022-2026', relevantCoursework: ['DSA'],
++};
++
++http.createServer((req, res) => {
++  const cors = { 'Access-Control-Allow-Origin': '*', 'Content-Type': 'application/json' };
++  const m = req.url.match(/^\/__mode\/(\w+)/);
++  if (m) { mode = m[1]; res.writeHead(200, cors); return res.end(JSON.stringify({ mode })); }
++  if (mode === 'down') return req.socket.destroy();
++  if (mode === 'hang') return;
++  const respond = () => {
++    if (mode === '500') { res.writeHead(500, cors); return res.end('{"error":"boom"}'); }
++    res.writeHead(200, cors);
++    res.end(JSON.stringify(req.url.startsWith('/api/profile') ? profile : []));
++  };
++  mode === 'slow' ? setTimeout(respond, 4000) : respond();
++}).listen(port, '127.0.0.1', () => console.log(`mock api on :${port}`));
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/App.tsx b/miles-morales-portfolio-fullstack/frontend/src/App.tsx
+index 8584fdb..bda0131 100644
+--- a/miles-morales-portfolio-fullstack/frontend/src/App.tsx
++++ b/miles-morales-portfolio-fullstack/frontend/src/App.tsx
+@@ -21,14 +21,6 @@ export function App() {
+     setVenomActive(true);
+   }, []);
+ 
+-  // Tells the pre-React boot splash (index.html — see the "web-rescue" loader
+-  // there) that the app has actually mounted, so it can play its "caught her"
+-  // ending and fade out. This fires even if App re-mounts under StrictMode's
+-  // double-invoke in dev; the splash script only listens for the first one.
+-  useEffect(() => {
+-    window.dispatchEvent(new Event('portfolio:app-ready'));
+-  }, []);
+-
+   // Global Interactive Click Listener for authentic tactile clicking sound
+   useEffect(() => {
+     const handleGlobalClick = (e: MouseEvent) => {
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/audio/soundEngine.ts b/miles-morales-portfolio-fullstack/frontend/src/audio/soundEngine.ts
+index 8a147fe..bc67953 100644
+--- a/miles-morales-portfolio-fullstack/frontend/src/audio/soundEngine.ts
++++ b/miles-morales-portfolio-fullstack/frontend/src/audio/soundEngine.ts
+@@ -564,6 +564,108 @@ class SoundEngine {
+     });
+   }
+ 
++  /**
++   * Boot cinematic cues. Same synthesis vocabulary as playThwip(): filtered
++   * noise for air, a falling sine for weight. All three share a context
++   * guard so a suspended/blocked AudioContext simply stays silent.
++   */
++
++  /** Rushing-air whoosh as Miles dives. */
++  public playWhoosh() {
++    void this.ensureRunning().then((running) => {
++      if (!running || !this.ctx || !this.masterGain) return;
++      const now = this.ctx.currentTime;
++      const len = Math.floor(this.ctx.sampleRate * 0.5);
++      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
++      const d = buf.getChannelData(0);
++      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
++      const src = this.ctx.createBufferSource();
++      src.buffer = buf;
++      const f = this.ctx.createBiquadFilter();
++      f.type = 'bandpass';
++      f.Q.setValueAtTime(1.4, now);
++      f.frequency.setValueAtTime(300, now);
++      f.frequency.exponentialRampToValueAtTime(2400, now + 0.28);
++      f.frequency.exponentialRampToValueAtTime(500, now + 0.5);
++      const g = this.ctx.createGain();
++      g.gain.setValueAtTime(0.001, now);
++      g.gain.linearRampToValueAtTime(0.3, now + 0.2);
++      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
++      src.connect(f);
++      f.connect(g);
++      g.connect(this.masterGain);
++      src.start(now);
++    });
++  }
++
++  /** Heavy low thud for the moment Gwen hits the ground. */
++  public playImpact() {
++    void this.ensureRunning().then((running) => {
++      if (!running || !this.ctx || !this.masterGain) return;
++      const now = this.ctx.currentTime;
++      const osc = this.ctx.createOscillator();
++      const og = this.ctx.createGain();
++      osc.type = 'sine';
++      osc.frequency.setValueAtTime(150, now);
++      osc.frequency.exponentialRampToValueAtTime(38, now + 0.4);
++      og.gain.setValueAtTime(0.7, now);
++      og.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
++      osc.connect(og);
++      og.connect(this.masterGain);
++      osc.start(now);
++      osc.stop(now + 0.52);
++
++      const len = Math.floor(this.ctx.sampleRate * 0.3);
++      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
++      const d = buf.getChannelData(0);
++      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
++      const n = this.ctx.createBufferSource();
++      n.buffer = buf;
++      const lp = this.ctx.createBiquadFilter();
++      lp.type = 'lowpass';
++      lp.frequency.setValueAtTime(1400, now);
++      lp.frequency.exponentialRampToValueAtTime(120, now + 0.28);
++      const ng = this.ctx.createGain();
++      ng.gain.setValueAtTime(0.4, now);
++      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
++      n.connect(lp);
++      lp.connect(ng);
++      ng.connect(this.masterGain);
++      n.start(now);
++    });
++  }
++
++  /** Spider-sense tingle: two quick rising blips with a shimmer. */
++  public playSenseTingle() {
++    void this.ensureRunning().then((running) => {
++      if (!running || !this.ctx || !this.masterGain) return;
++      const now = this.ctx.currentTime;
++      [0, 0.09].forEach((offset, i) => {
++        const osc = this.ctx!.createOscillator();
++        const lfo = this.ctx!.createOscillator();
++        const lfoGain = this.ctx!.createGain();
++        const g = this.ctx!.createGain();
++        const start = now + offset;
++        osc.type = 'sine';
++        osc.frequency.setValueAtTime(1500 + i * 500, start);
++        osc.frequency.exponentialRampToValueAtTime(2700 + i * 500, start + 0.18);
++        lfo.frequency.value = 38;
++        lfoGain.gain.value = 90;
++        lfo.connect(lfoGain);
++        lfoGain.connect(osc.frequency);
++        g.gain.setValueAtTime(0.001, start);
++        g.gain.linearRampToValueAtTime(0.16, start + 0.02);
++        g.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
++        osc.connect(g);
++        g.connect(this.masterGain!);
++        osc.start(start);
++        lfo.start(start);
++        osc.stop(start + 0.22);
++        lfo.stop(start + 0.22);
++      });
++    });
++  }
++
+   /** Venom icon button buzz — a harsh, sustained, menacing electric drone. */
+   public playVenomBuzz() {
+     void this.ensureRunning().then((running) => {
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/BootGate.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/BootGate.tsx
+new file mode 100644
+index 0000000..f2b5330
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/BootGate.tsx
+@@ -0,0 +1,42 @@
++import { Component, lazy, startTransition, Suspense, useCallback, useState } from 'react';
++import type { ReactNode } from 'react';
++
++// The cinematic ships as its own lazy chunk (components, SVG art, CSS), so it
++// never competes with the main bundle. The pre-React splash in index.html
++// covers the gap while it downloads.
++const CinematicLoader = lazy(() => import('./CinematicLoader'));
++
++interface BoundaryProps { onFail: () => void; children: ReactNode; }
++
++/** If the chunk fails to load or the cinematic throws, the site must still open. */
++class LoaderBoundary extends Component<BoundaryProps, { failed: boolean }> {
++  state = { failed: false };
++  static getDerivedStateFromError() { return { failed: true }; }
++  componentDidCatch(err: unknown) {
++    console.warn('[boot] cinematic unavailable, opening the portfolio directly', err);
++    this.props.onFail();
++  }
++  render() { return this.state.failed ? null : this.props.children; }
++}
++
++export function BootGate({ children }: { children: ReactNode }) {
++  const [appMounted, setAppMounted] = useState(false);
++  const [loaderDone, setLoaderDone] = useState(false);
++
++  const mountApp = useCallback(() => startTransition(() => setAppMounted(true)), []);
++  const finish = useCallback(() => setLoaderDone(true), []);
++  const bail = useCallback(() => { setAppMounted(true); setLoaderDone(true); }, []);
++
++  return (
++    <>
++      {appMounted && children}
++      {!loaderDone && (
++        <LoaderBoundary onFail={bail}>
++          <Suspense fallback={null}>
++            <CinematicLoader onAppNeeded={mountApp} onDone={finish} appMounted={appMounted} />
++          </Suspense>
++        </LoaderBoundary>
++      )}
++    </>
++  );
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/CinematicLoader.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/CinematicLoader.tsx
+new file mode 100644
+index 0000000..e001b26
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/CinematicLoader.tsx
+@@ -0,0 +1,134 @@
++import { startTransition, useCallback, useEffect, useMemo, useRef } from 'react';
++import './boot.css';
++import { Stage } from './scene/Stage';
++import type { StageHandle } from './scene/Stage';
++import { LoadingState } from './scene/LoadingState';
++import { FailureState } from './scene/FailureState';
++import { RevealWeb, scallopPath } from './scene/RevealWeb';
++import { useBootSequence } from './useBootSequence';
++import type { BootState } from './bootMachine';
++import { easeInOut } from './choreography';
++import type { Frame } from './choreography';
++import { BRANCH, STORAGE_KEY_SEEN } from './bootConfig';
++
++interface Props {
++  /** Mount the portfolio underneath (needed before the reveal can show it). */
++  onAppNeeded: () => void;
++  /** Cinematic finished — remove the overlay. */
++  onDone: () => void;
++  /** The portfolio has been committed underneath. */
++  appMounted: boolean;
++}
++
++function detectEnv() {
++  const mq = (q: string) => typeof matchMedia === 'function' && matchMedia(q).matches;
++  const reducedMotion = mq('(prefers-reduced-motion: reduce)');
++  const weak = (navigator.hardwareConcurrency ?? 8) <= 4 || ((navigator as { deviceMemory?: number }).deviceMemory ?? 8) <= 4;
++  const lowPower = mq('(max-width: 768px)') || mq('(pointer: coarse)') || weak;
++  let seen = false;
++  try { seen = sessionStorage.getItem(STORAGE_KEY_SEEN) === '1'; } catch { /* storage blocked */ }
++  // ?cinematic=full replays the whole story even on a repeat visit.
++  const forceFull = new URLSearchParams(window.location.search).get('cinematic') === 'full';
++  return { reducedMotion, lowPower, repeatVisit: seen && !forceFull };
++}
++
++export default function CinematicLoader({ onAppNeeded, onDone, appMounted }: Props) {
++  const env = useMemo(detectEnv, []);
++  const rootRef = useRef<HTMLDivElement>(null);
++  const stageRef = useRef<StageHandle>(null);
++  const webRef = useRef<SVGGElement>(null);
++  const lastStageKey = useRef('');
++  const holeKey = useRef('');
++
++  // Per-frame DOM work: stage compositing plus the reveal mask. No React state.
++  const render = useCallback((s: BootState, f: Frame, ghosts: Frame[], dt: number) => {
++    const stage = stageRef.current;
++    const root = rootRef.current;
++    if (!stage || !root) return;
++
++    if (env.reducedMotion) {
++      // Static poster: repaint only when the stage changes (story hold -> error).
++      if (lastStageKey.current !== s.stage) {
++        lastStageKey.current = s.stage;
++        stage.apply(f, [], s.wall, 0, false);
++      }
++      if (s.stage === 'reveal') {
++        root.style.opacity = String(Math.max(0, 1 - s.branch / BRANCH.REDUCED_REVEAL_DUR));
++        root.classList.add('boot-passthrough');
++      }
++      return;
++    }
++
++    stage.apply(f, ghosts, s.wall, dt, s.stage !== 'error');
++
++    // Web-wipe: a web-shaped hole opens in the overlay from where Miles is.
++    const u = f.reveal.progress;
++    const web = webRef.current;
++    if (s.stage === 'reveal' && u > 0) {
++      root.classList.add('boot-passthrough');
++      const { w, h } = stage.size();
++      const c = s.forced ? { x: w / 2, y: h / 2 } : stage.project(f.reveal.cx, f.reveal.cy);
++      const rMax = Math.hypot(Math.max(c.x, w - c.x), Math.max(c.y, h - c.y)) * 1.12;
++      const r = Math.max(1, rMax * easeInOut(u));
++      root.style.clipPath = `path(evenodd, "M0 0H${w}V${h}H0Z ${scallopPath(c.x, c.y, r)}")`;
++      if (web) {
++        web.setAttribute('transform', `translate(${c.x.toFixed(1)} ${c.y.toFixed(1)}) scale(${(r / 100).toFixed(3)})`);
++        web.setAttribute('opacity', String(Math.max(0, 1 - u * u).toFixed(3)));
++      }
++      holeKey.current = 'open';
++    } else if (web && holeKey.current === 'open') {
++      web.setAttribute('opacity', '0');
++    }
++  }, [env.reducedMotion]);
++
++  const { ui, retry, enter, appReady } = useBootSequence({
++    reducedMotion: env.reducedMotion,
++    repeatVisit: env.repeatVisit,
++    render,
++    onReset: () => {
++      lastStageKey.current = '';
++      holeKey.current = '';
++      stageRef.current?.reset();
++      const root = rootRef.current;
++      if (root) { root.style.clipPath = ''; root.style.opacity = ''; root.classList.remove('boot-passthrough'); }
++    },
++    onDone,
++    onQuality: (level) => stageRef.current?.setQuality(level),
++  });
++
++  // Mount the portfolio underneath as soon as the outcome allows a reveal.
++  // startTransition keeps the cinematic's frames smooth while it renders.
++  useEffect(() => {
++    if (ui.appNeeded) startTransition(onAppNeeded);
++  }, [ui.appNeeded, onAppNeeded]);
++
++  // Once the portfolio has committed, give it two frames to paint, then let the
++  // reveal proceed — so the web-wipe never opens onto a blank page.
++  useEffect(() => {
++    if (!appMounted) return;
++    let id = requestAnimationFrame(() => { id = requestAnimationFrame(appReady); });
++    return () => cancelAnimationFrame(id);
++  }, [appMounted, appReady]);
++
++  // Hand off from the static pre-React splash (index.html) once we're on screen.
++  useEffect(() => {
++    const id = requestAnimationFrame(() => window.dispatchEvent(new Event('portfolio:boot-handoff')));
++    return () => cancelAnimationFrame(id);
++  }, []);
++
++  const label = ui.stage === 'error' ? 'Failed to load the portfolio' : "Loading Aryan Singh's portfolio";
++
++  return (
++    <>
++      <div ref={rootRef} className="boot-root" role="status" aria-live="polite" aria-label={label}>
++        <Stage ref={stageRef} lowPower={env.lowPower} />
++        {ui.stage === 'error' ? (
++          <FailureState onRetry={retry} onEnter={enter} />
++        ) : (
++          ui.stage !== 'reveal' && <LoadingState caption={ui.caption} />
++        )}
++      </div>
++      {!env.reducedMotion && <RevealWeb ref={webRef} />}
++    </>
++  );
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/README.md b/miles-morales-portfolio-fullstack/frontend/src/boot/README.md
+new file mode 100644
+index 0000000..b874bea
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/README.md
+@@ -0,0 +1,45 @@
++# Boot cinematic
++
++A Spider-Verse-style rescue (Miles dives after a falling Gwen) that doubles as
++the app's real loading and failure UI. It reacts to the actual load result; it
++never decides the outcome itself.
++
++```
++main.tsx ── loadLiveData() starts immediately (shared, memoised, abortable)
++   └─ BootGate ── lazy-loads CinematicLoader, mounts <App/> only when needed
++        └─ CinematicLoader
++             ├─ useBootSequence   one rAF loop · binds the load promise · audio cues · quality governor
++             ├─ bootMachine       PURE state machine (time injected) — all race logic lives here
++             ├─ choreography      PURE: BootState -> Frame (poses, camera, fx)
++             └─ scene/            Stage (compositor) · Figure (rig art) · Layers · Fx · LoadingState · FailureState · RevealWeb
++```
++
++**Outcome logic.** The story runs to a decision point (7s of story time) and
++*holds* there until the real result arrives. Result in time -> catch -> web-wipe
++reveal. Failure/timeout -> Gwen hits the ground -> failure card. If the result
++arrives early, the story fast-forwards (6x) instead of making you wait. Results
++carry an attempt id, so a late response from a previous attempt can't resolve
++the current one after *Try again*.
++
++**Readiness.** `loadLiveData()` is `ok` when `/api/profile` succeeds, or when no
++backend is configured (the static content *is* the app). Other endpoints failing
++just leave their sections on static content. *Enter portfolio anyway* is
++therefore a genuinely working option.
++
++**Tuning.** Every timing is in `bootConfig.ts` (`LOAD.TIMEOUT_S` is the
++deadline; `BEAT`/`BRANCH` shape the story).
++
++**Behaviour switches**
++- `prefers-reduced-motion`: static poster, text only, 0.35s crossfade.
++- Repeat visit in a session that loads instantly: straight to the reveal.
++  `?cinematic=full` replays the whole story.
++- Slow device: a governor sheds detail (extras, then layers) if frames stay slow.
++- Audio: cues only play if the site's sound is already unmuted.
++- Dev only: `?simulate=fail|500|slow` exercises the failure/slow paths.
++
++**Testing against a backend**
++```
++node scripts/mock-api.mjs 8080            # then: curl localhost:8080/__mode/ok|500|slow|hang|down
++VITE_API_BASE_URL=http://127.0.0.1:8080 npm run dev
++npm test                                   # state machine + choreography invariants
++```
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/boot.css b/miles-morales-portfolio-fullstack/frontend/src/boot/boot.css
+new file mode 100644
+index 0000000..c188206
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/boot.css
+@@ -0,0 +1,157 @@
++/* Boot cinematic. Loaded lazily with the CinematicLoader chunk, so it costs
++   nothing on the critical path. Palette mirrors the portfolio's own tokens
++   (spider red, venom violet, graffiti yellow/cyan, void black). */
++
++.boot-root {
++  position: fixed;
++  inset: 0;
++  z-index: 10000;
++  overflow: hidden;
++  background: #05060a;
++  color: #f3f4f8;
++  /* the page behind never scrolls while the cinematic owns the screen */
++  overscroll-behavior: contain;
++  touch-action: none;
++  animation: boot-in 0.35s ease-out both;
++}
++@keyframes boot-in { from { opacity: 0; } to { opacity: 1; } }
++.boot-root.boot-passthrough { pointer-events: none; }
++
++.boot-stage { position: absolute; inset: 0; overflow: hidden; contain: layout paint; }
++
++.boot-layer { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
++/* Each layer's art is clipped to the viewport + a 25% margin on every side
++   (enough for camera pan/zoom). Unclipped, the art spans thousands of px and
++   every composited layer becomes a huge texture — that alone cost ~45 fps. */
++.boot-layer-svg { position: absolute; left: -25%; top: -25%; width: 150%; height: 150%; display: block; overflow: hidden; }
++
++.boot-particles, .boot-speed { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; }
++.boot-speed [data-fx='speed'] { opacity: 0; transform-origin: 0 0; will-change: transform, opacity; }
++
++/* comic halftone + vignette: static, so effectively free */
++.boot-halftone {
++  position: absolute; inset: 0; pointer-events: none; opacity: 0.32;
++  background-image: radial-gradient(rgba(255, 255, 255, 0.34) 1.1px, transparent 1.5px);
++  background-size: 7px 7px;
++  -webkit-mask-image: radial-gradient(ellipse at 50% 45%, transparent 38%, #000 100%);
++  mask-image: radial-gradient(ellipse at 50% 45%, transparent 38%, #000 100%);
++}
++.boot-vignette {
++  position: absolute; inset: 0; pointer-events: none;
++  background:
++    radial-gradient(ellipse at center, rgba(0, 0, 0, 0) 42%, rgba(0, 0, 0, 0.62) 100%),
++    linear-gradient(200deg, rgba(230, 36, 41, 0.10), transparent 45%),
++    linear-gradient(-20deg, rgba(106, 92, 255, 0.10), transparent 40%);
++}
++
++.boot-flash { position: absolute; inset: 0; background: #fff; opacity: 0; pointer-events: none; }
++.boot-glitch { position: absolute; inset: 0; pointer-events: none; display: none; overflow: hidden; }
++.boot-glitch i { position: absolute; left: 0; width: 100%; height: 4%; opacity: 0; }
++.boot-glitch i:nth-child(1) { background: linear-gradient(90deg, rgba(255, 40, 70, 0.7), rgba(255, 40, 70, 0.1)); }
++.boot-glitch i:nth-child(2) { background: linear-gradient(90deg, rgba(0, 210, 255, 0.1), rgba(0, 210, 255, 0.7)); }
++.boot-glitch i:nth-child(3) { background: rgba(255, 255, 255, 0.5); }
++
++.boot-bar { position: absolute; left: 0; right: 0; height: 8%; background: #000; z-index: 3; will-change: transform; }
++.boot-bar-top { top: 0; transform: translateY(-100%); }
++.boot-bar-bottom { bottom: 0; transform: translateY(100%); }
++
++/* ---- caption (comic narration box) ---------------------------------- */
++.boot-hud {
++  position: absolute; left: 0; right: 0; bottom: 13%; z-index: 4;
++  display: flex; flex-direction: column; align-items: center; gap: 0.6rem;
++  padding: 0 1.25rem; pointer-events: none; text-align: center;
++}
++.boot-caption {
++  font-family: 'Oswald', 'Impact', sans-serif; font-weight: 700;
++  font-size: clamp(0.9rem, 2.4vw, 1.35rem);
++  letter-spacing: 0.1em; text-transform: uppercase; color: #0a0a0f;
++  background: #ffd23f; padding: 0.35rem 0.9rem;
++  border: 2px solid #0a0a0f; box-shadow: 4px 4px 0 #e62429;
++  transform: rotate(-1.4deg);
++  max-width: 100%;
++  animation: boot-caption-in 0.28s cubic-bezier(0.2, 1.4, 0.4, 1) both;
++}
++@keyframes boot-caption-in { from { opacity: 0; transform: translateY(8px) rotate(-3deg) scale(0.92); } to { opacity: 1; transform: rotate(-1.4deg); } }
++.boot-sub {
++  font-family: 'JetBrains Mono', monospace; font-size: clamp(0.58rem, 1.6vw, 0.7rem);
++  letter-spacing: 0.16em; text-transform: uppercase; color: rgba(243, 244, 248, 0.62);
++  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.9);
++}
++
++/* ---- failure card ---------------------------------------------------- */
++.boot-fail {
++  /* anchored high so the failed-rescue tableau stays visible below it */
++  position: absolute; left: 50%; top: 5%; z-index: 5;
++  width: min(92vw, 30rem);
++  max-height: 90vh; overflow-y: auto;
++  transform: translate(-50%, 0);
++  display: flex; flex-direction: column; align-items: center; gap: 0.9rem;
++  padding: clamp(1.1rem, 4vw, 1.9rem);
++  text-align: center;
++  background: rgba(8, 7, 12, 0.86);
++  border: 2px solid #ff3b45;
++  box-shadow: 6px 6px 0 #6a5cff, 0 24px 70px rgba(0, 0, 0, 0.6);
++  backdrop-filter: blur(6px);
++  animation: boot-fail-in 0.42s cubic-bezier(0.2, 1.3, 0.4, 1) both;
++}
++@keyframes boot-fail-in {
++  from { opacity: 0; transform: translate(-50%, -14px) scale(0.94) rotate(-1deg); }
++  to   { opacity: 1; transform: translate(-50%, 0) scale(1) rotate(0); }
++}
++.boot-fail-kicker {
++  font-family: 'JetBrains Mono', monospace; font-size: 0.66rem; letter-spacing: 0.2em;
++  text-transform: uppercase; color: #ffd23f;
++}
++.boot-fail-title {
++  margin: 0;
++  font-family: 'Bangers', 'Impact', sans-serif; font-weight: 400;
++  font-size: clamp(1.7rem, 7vw, 2.7rem); line-height: 1.02; letter-spacing: 0.05em; text-transform: uppercase;
++  color: #ff3b45;
++  text-shadow: 1.5px 0 0 #00d2ff, -1.5px 0 0 #6a5cff, 0 3px 0 #08080e;
++  animation: boot-glitch-text 3.2s steps(1) infinite;
++}
++@keyframes boot-glitch-text {
++  0%, 92%, 100% { transform: none; text-shadow: 2px 0 0 #00d2ff, -2px 0 0 #6a5cff, 0 3px 0 #08080e; }
++  93% { transform: translateX(-3px) skewX(-4deg); text-shadow: 5px 0 0 #00d2ff, -5px 0 0 #ff2a50, 0 3px 0 #08080e; }
++  95% { transform: translateX(3px); }
++  97% { transform: translateX(-1px) skewX(2deg); }
++}
++.boot-fail-desc {
++  margin: 0; font-family: 'Space Grotesk', system-ui, sans-serif;
++  font-size: clamp(0.85rem, 2.6vw, 1rem); line-height: 1.5; color: rgba(243, 244, 248, 0.86);
++}
++.boot-fail-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 0.7rem; margin-top: 0.2rem; width: 100%; }
++.boot-btn {
++  font-family: 'JetBrains Mono', monospace; font-weight: 700; font-size: 0.74rem;
++  letter-spacing: 0.14em; text-transform: uppercase; cursor: pointer;
++  padding: 0.75rem 1.2rem; min-height: 44px; /* comfortable touch target */
++  border: 2px solid #08080e; color: #fff; background: #e62429;
++  box-shadow: 4px 4px 0 #08080e;
++  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease;
++}
++.boot-btn:hover { background: #ff1f3d; transform: translate(-1px, -1px); box-shadow: 5px 5px 0 #08080e; }
++.boot-btn:active { transform: translate(3px, 3px); box-shadow: 1px 1px 0 #08080e; }
++.boot-btn:focus-visible { outline: 3px solid #ffd23f; outline-offset: 3px; }
++.boot-btn-ghost { background: transparent; color: #c9c3ff; border-color: #6a5cff; box-shadow: 4px 4px 0 rgba(106, 92, 255, 0.45); }
++.boot-btn-ghost:hover { background: rgba(106, 92, 255, 0.18); }
++
++/* ---- web-wipe reveal overlay (sits above the portfolio) -------------- */
++.boot-reveal-web { position: fixed; inset: 0; z-index: 10001; pointer-events: none; }
++.boot-reveal-web svg { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; }
++
++/* ---- small screens ---------------------------------------------------- */
++@media (max-height: 520px) {
++  .boot-fail { top: 2%; gap: 0.5rem; padding: 0.8rem 1rem; }
++  .boot-fail-title { font-size: 1.5rem; }
++}
++@media (max-width: 640px) {
++  .boot-bar { height: 6%; }
++  .boot-hud { bottom: 15%; }
++  .boot-halftone { background-size: 6px 6px; }
++}
++
++/* ---- reduced motion: static poster, text only ------------------------- */
++@media (prefers-reduced-motion: reduce) {
++  .boot-root, .boot-caption, .boot-fail, .boot-fail-title { animation: none !important; }
++  .boot-fail-title { text-shadow: 2px 0 0 #00d2ff, -2px 0 0 #6a5cff, 0 3px 0 #08080e; }
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/bootAudio.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/bootAudio.ts
+new file mode 100644
+index 0000000..1e93080
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/bootAudio.ts
+@@ -0,0 +1,23 @@
++import { sound } from '../audio/soundEngine';
++
++// The portfolio's engine defaults to muted and only unlocks after a user
++// gesture, so most first-time visitors get a silent cinematic — by design.
++// Cues fire only when sound is already enabled (the engine's SFX don't check
++// the mute flag themselves, so the guard lives here).
++
++export type Cue = 'sense' | 'whoosh' | 'thwip' | 'catch' | 'impact';
++
++export function playCue(cue: Cue): void {
++  try {
++    if (sound.getState().isMuted) return;
++    switch (cue) {
++      case 'sense': sound.playSenseTingle(); break;
++      case 'whoosh': sound.playWhoosh(); break;
++      case 'thwip': sound.playThwip(); break;
++      case 'catch': sound.playWebSnap(); break;
++      case 'impact': sound.playImpact(); break;
++    }
++  } catch {
++    /* audio must never be able to break the loader */
++  }
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/bootConfig.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/bootConfig.ts
+new file mode 100644
+index 0000000..aa9ad5e
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/bootConfig.ts
+@@ -0,0 +1,48 @@
++// Single source of truth for every timing/threshold in the boot cinematic.
++// "Story time" is cosmetic seconds on the cinematic's own clock (it can be
++// fast-forwarded or slowed). "Wall time" is real elapsed seconds and is the
++// only clock the load timeout trusts.
++
++/** Story beats (story seconds). Mirrors the spec's 0-1.5-3-5-7 timeline. */
++export const BEAT = {
++  /** Gwen starts to fall. */
++  FALL: 1.5,
++  /** Miles' spider-sense fires and he reacts. */
++  NOTICE: 3.0,
++  /** Web shot leaves his wrist. */
++  RESCUE: 5.0,
++  /** Decision point: the story holds here until the load resolves. */
++  DECISION: 7.0,
++} as const;
++
++/** Branch timings (seconds after the decision point). */
++export const BRANCH = {
++  /** Success: Miles grabs Gwen and swings off. */
++  CATCH_DUR: 1.0,
++  /** Success: web-wipe that reveals the portfolio. */
++  REVEAL_DUR: 0.95,
++  /** Failure: moment Gwen hits the ground. */
++  IMPACT_AT: 0.9,
++  /** Failure: slow-motion hit-stop window after impact. */
++  HITSTOP_DUR: 0.3,
++  HITSTOP_SCALE: 0.3,
++  /** Failure: branch time at which the error UI takes over. */
++  ERROR_AT: 1.8,
++  /** Reduced motion: plain crossfade instead of the web-wipe. */
++  REDUCED_REVEAL_DUR: 0.35,
++} as const;
++
++export const LOAD = {
++  /** Wall-clock deadline; past this a still-pending load counts as failed. */
++  TIMEOUT_S: 8,
++  /** Per-request abort, kept under TIMEOUT_S so the machine stays the authority. */
++  REQUEST_TIMEOUT_MS: 7500,
++  /** Story speed-up once the outcome is known but the story is behind. */
++  FAST_RATE: 6,
++  /** A repeat visit that resolves this fast skips the story entirely. */
++  INSTANT_BELOW_S: 0.4,
++  /** The reveal waits at most this long for the portfolio to paint underneath. */
++  APP_WAIT_MAX_S: 1.5,
++} as const;
++
++export const STORAGE_KEY_SEEN = 'spider_boot_seen';
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/bootMachine.test.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/bootMachine.test.ts
+new file mode 100644
+index 0000000..ce9b644
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/bootMachine.test.ts
+@@ -0,0 +1,209 @@
++import { describe, it, expect } from 'vitest';
++import { createBoot, advance, resolve, retry, enterAnyway, timeScale, markAppReady } from './bootMachine';
++import type { BootState } from './bootMachine';
++import { BEAT, BRANCH, LOAD } from './bootConfig';
++
++const opts = { reducedMotion: false, repeatVisit: false };
++
++/** Step in 1/60s ticks, like a real rAF loop. */
++function run(s: BootState, seconds: number): BootState {
++  const steps = Math.round(seconds * 60);
++  for (let i = 0; i < steps; i++) s = advance(s, 1 / 60);
++  return s;
++}
++
++describe('story clock', () => {
++  it('runs in real time while the load is pending and holds at DECISION', () => {
++    let s = run(createBoot(opts), 5);
++    expect(s.story).toBeCloseTo(5, 1);
++    s = run(s, 2.5); // wall ~7.5 < timeout 8
++    expect(s.story).toBe(BEAT.DECISION);
++    expect(s.stage).toBe('story'); // holding, not branching
++    expect(s.status).toBe('pending');
++  });
++
++  it('never lets the story finish the load on its own', () => {
++    const s = run(createBoot(opts), LOAD.TIMEOUT_S - 0.2);
++    expect(s.status).toBe('pending');
++    expect(s.stage).toBe('story');
++  });
++});
++
++describe('success path', () => {
++  it('fast-forwards, then catches, then reveals, then is done', () => {
++    let s = run(createBoot(opts), 0.3);
++    s = markAppReady(resolve(s, 'ok', s.attempt));
++    expect(timeScale(s)).toBe(LOAD.FAST_RATE);
++    // remaining story ~6.7s at 6x ~= 1.1s
++    s = run(s, 1.3);
++    expect(s.stage).toBe('catch');
++    s = run(s, BRANCH.CATCH_DUR + 0.05);
++    expect(s.stage).toBe('reveal');
++    s = run(s, BRANCH.REVEAL_DUR + 0.05);
++    expect(s.stage).toBe('done');
++  });
++
++  it('a result arriving at the hold point catches immediately (no extra wait)', () => {
++    let s = run(createBoot(opts), 7.1);
++    s = resolve(s, 'ok', s.attempt);
++    s = advance(s, 1 / 60);
++    expect(s.stage).toBe('catch');
++  });
++
++  it('repeat visit + instant load skips the story AND the catch beat', () => {
++    let s = createBoot({ reducedMotion: false, repeatVisit: true });
++    s = run(s, 0.1);
++    s = markAppReady(resolve(s, 'ok', s.attempt));
++    expect(s.stage).toBe('reveal');
++    s = run(s, BRANCH.REVEAL_DUR + 0.05);
++    expect(s.stage).toBe('done');
++  });
++
++  it('repeat visit that is NOT instant still plays the full story', () => {
++    let s = createBoot({ reducedMotion: false, repeatVisit: true });
++    s = run(s, 1.0);
++    s = resolve(s, 'ok', s.attempt);
++    expect(s.stage).toBe('story');
++  });
++
++  it('first visit never skips the story even if instant', () => {
++    let s = run(createBoot(opts), 0.1);
++    s = resolve(s, 'ok', s.attempt);
++    expect(s.story).toBeLessThan(BEAT.DECISION);
++  });
++});
++
++describe('failure path', () => {
++  it('network failure: fast-forward, impact, hit-stop slow-mo, then error', () => {
++    let s = run(createBoot(opts), 0.5);
++    s = resolve(s, 'failed', s.attempt);
++    s = run(s, 1.3);
++    expect(s.stage).toBe('impact');
++    // inside the hit-stop window time slows down
++    s = { ...s, branch: BRANCH.IMPACT_AT + 0.1 };
++    expect(timeScale(s)).toBe(BRANCH.HITSTOP_SCALE);
++    s = { ...s, branch: BRANCH.IMPACT_AT + BRANCH.HITSTOP_DUR + 0.1 };
++    expect(timeScale(s)).toBe(1);
++    s = run({ ...s, branch: 0 }, 3);
++    expect(s.stage).toBe('error');
++  });
++
++  it('wall-clock timeout fails a load that never answers', () => {
++    let s = run(createBoot(opts), LOAD.TIMEOUT_S + 0.1);
++    expect(s.status).toBe('failed');
++    s = run(s, 4);
++    expect(s.stage).toBe('error');
++  });
++
++  it('timeout still counts real time when the story is throttled (hidden tab)', () => {
++    let s = createBoot(opts);
++    // tab hidden: 1s of wall time elapses but story only gets a sliver
++    for (let i = 0; i < 10; i++) s = advance(s, 1, 0.016);
++    expect(s.status).toBe('failed');
++    expect(s.story).toBeLessThan(1);
++  });
++
++  it('error stage holds until the user acts', () => {
++    let s = run(createBoot(opts), LOAD.TIMEOUT_S + 6);
++    expect(s.stage).toBe('error');
++    s = run(s, 10);
++    expect(s.stage).toBe('error');
++  });
++});
++
++describe('races', () => {
++  it('ignores duplicate results (first one wins)', () => {
++    let s = createBoot(opts);
++    s = resolve(s, 'failed', s.attempt);
++    s = resolve(s, 'ok', s.attempt);
++    expect(s.status).toBe('failed');
++  });
++
++  it('ignores a late result from a previous attempt after Retry', () => {
++    let s = run(createBoot(opts), LOAD.TIMEOUT_S + 4);
++    const stale = s.attempt;
++    s = retry(s);
++    expect(s.attempt).toBe(stale + 1);
++    s = resolve(s, 'ok', stale); // late response from attempt 1
++    expect(s.status).toBe('pending');
++    s = resolve(s, 'ok', s.attempt);
++    expect(s.status).toBe('ok');
++  });
++
++  it('result arriving after the timeout already failed is ignored', () => {
++    let s = run(createBoot(opts), LOAD.TIMEOUT_S + 0.1);
++    s = resolve(s, 'ok', s.attempt);
++    expect(s.status).toBe('failed');
++  });
++});
++
++describe('reveal waits for the portfolio to paint', () => {
++  const toReveal = () => {
++    let s = markAppReady(resolve(run(createBoot(opts), 0.3), 'ok', 1));
++    s = { ...s, appReady: false }; // pretend the mount is slow
++    return run(s, 3);
++  };
++
++  it('holds the reveal at zero progress until appReady', () => {
++    const s = toReveal();
++    expect(s.stage).toBe('reveal');
++    expect(s.branch).toBe(0);
++  });
++
++  it('proceeds as soon as the portfolio reports ready', () => {
++    let s = markAppReady({ ...toReveal() });
++    s = run(s, BRANCH.REVEAL_DUR + 0.05);
++    expect(s.stage).toBe('done');
++  });
++
++  it('never deadlocks: gives up waiting after APP_WAIT_MAX_S', () => {
++    let s = toReveal();
++    s = run(s, LOAD.APP_WAIT_MAX_S + BRANCH.REVEAL_DUR + 0.2);
++    expect(s.stage).toBe('done');
++  });
++
++  it('enter-anyway reveal also waits for the portfolio', () => {
++    let s = enterAnyway(run(createBoot(opts), LOAD.TIMEOUT_S + 6));
++    s = run(s, 0.5);
++    expect(s.stage).toBe('reveal');
++    expect(s.branch).toBe(0);
++    s = markAppReady(s);
++    s = run(s, BRANCH.REVEAL_DUR + 0.05);
++    expect(s.stage).toBe('done');
++  });
++});
++
++describe('retry & enter-anyway', () => {
++  it('retry resets clocks and stage', () => {
++    let s = run(createBoot(opts), LOAD.TIMEOUT_S + 6);
++    s = retry(s);
++    expect(s).toMatchObject({ status: 'pending', stage: 'story', story: 0, wall: 0, branch: 0 });
++  });
++
++  it('enterAnyway only works from the error stage', () => {
++    const s = createBoot(opts);
++    expect(enterAnyway(s)).toBe(s);
++    const e = enterAnyway(run(createBoot(opts), LOAD.TIMEOUT_S + 6));
++    expect(e.stage).toBe('reveal');
++    expect(e.forced).toBe(true);
++  });
++});
++
++describe('reduced motion', () => {
++  const rm = { reducedMotion: true, repeatVisit: false };
++  it('has no story: success is catch -> short crossfade -> done', () => {
++    let s = createBoot(rm);
++    expect(s.story).toBe(BEAT.DECISION);
++    s = markAppReady(resolve(s, 'ok', s.attempt));
++    s = run(s, 0.1);
++    expect(s.stage).toBe('reveal');
++    s = run(s, BRANCH.REDUCED_REVEAL_DUR + 0.05);
++    expect(s.stage).toBe('done');
++  });
++  it('failure goes straight to the error state', () => {
++    let s = createBoot(rm);
++    s = resolve(s, 'failed', s.attempt);
++    s = run(s, 0.1);
++    expect(s.stage).toBe('error');
++  });
++});
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/bootMachine.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/bootMachine.ts
+new file mode 100644
+index 0000000..2888704
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/bootMachine.ts
+@@ -0,0 +1,154 @@
++// Pure boot state machine. No timers, no DOM, no React — time is injected, so
++// every race between "animation finished" and "app loaded" is unit-testable.
++//
++// Two ideas keep the races out:
++//  1. The story never decides the outcome. It runs to DECISION and *holds*
++//     there until the real load result (or the wall-clock timeout) arrives.
++//  2. Results are tagged with an attempt id, so a late response from a
++//     previous attempt can never resolve the current one after Retry.
++
++import { BEAT, BRANCH, LOAD } from './bootConfig';
++
++export type LoadStatus = 'pending' | 'ok' | 'failed';
++export type Stage = 'story' | 'catch' | 'reveal' | 'impact' | 'error' | 'done';
++
++export interface BootState {
++  attempt: number;
++  status: LoadStatus;
++  stage: Stage;
++  /** Cosmetic story clock (seconds), clamped to BEAT.DECISION until resolved. */
++  story: number;
++  /** Real seconds since this attempt started. */
++  wall: number;
++  /** Seconds spent inside the current branch stage. */
++  branch: number;
++  reducedMotion: boolean;
++  /** Repeat visit => allowed to skip the story when the load is instant. */
++  repeatVisit: boolean;
++  /** True when the visitor chose "Enter anyway" after a failure. */
++  forced: boolean;
++  /** The portfolio has painted underneath, so the reveal has something to show. */
++  appReady: boolean;
++  /** Seconds the reveal has been held waiting for appReady. */
++  revealWait: number;
++}
++
++export interface BootOptions {
++  reducedMotion: boolean;
++  repeatVisit: boolean;
++}
++
++export function createBoot(opts: BootOptions, attempt = 1): BootState {
++  return {
++    attempt,
++    status: 'pending',
++    stage: 'story',
++    // Reduced motion has no story: jump straight to the (static) decision frame.
++    story: opts.reducedMotion ? BEAT.DECISION : 0,
++    wall: 0,
++    branch: 0,
++    reducedMotion: opts.reducedMotion,
++    repeatVisit: opts.repeatVisit,
++    forced: false,
++    appReady: false,
++    revealWait: 0,
++  };
++}
++
++/** Report the real load outcome. Stale or duplicate reports are ignored. */
++export function resolve(s: BootState, result: 'ok' | 'failed', attempt: number): BootState {
++  if (attempt !== s.attempt || s.status !== 'pending') return s;
++  const next: BootState = { ...s, status: result };
++  if (result === 'ok' && s.repeatVisit && s.wall < LOAD.INSTANT_BELOW_S) {
++    // Instant path: a repeat visit that loads at once gets no montage and no
++    // catch beat — straight to the web-wipe (which still waits for appReady).
++    next.story = BEAT.DECISION;
++    next.stage = 'reveal';
++    next.branch = 0;
++  }
++  return next;
++}
++
++/** The portfolio is mounted and painted under the overlay. */
++export function markAppReady(s: BootState): BootState {
++  return s.appReady ? s : { ...s, appReady: true };
++}
++
++/** Restart loading. Returns a fresh state with a new attempt id. */
++export function retry(s: BootState): BootState {
++  return createBoot({ reducedMotion: s.reducedMotion, repeatVisit: s.repeatVisit }, s.attempt + 1);
++}
++
++/** "Enter portfolio anyway" — only meaningful from the error stage. */
++export function enterAnyway(s: BootState): BootState {
++  if (s.stage !== 'error') return s;
++  return { ...s, stage: 'reveal', branch: 0, forced: true };
++}
++
++/** Story speed multiplier for the current state. */
++export function timeScale(s: BootState): number {
++  if (s.stage === 'story') {
++    return s.status !== 'pending' && s.story < BEAT.DECISION ? LOAD.FAST_RATE : 1;
++  }
++  if (s.stage === 'impact') {
++    const sinceImpact = s.branch - BRANCH.IMPACT_AT;
++    if (sinceImpact >= 0 && sinceImpact < BRANCH.HITSTOP_DUR) return BRANCH.HITSTOP_SCALE;
++  }
++  return 1;
++}
++
++/**
++ * Advance by `dtWall` real seconds. `dtStory` defaults to dtWall but callers
++ * pass less when the tab was hidden, so a backgrounded tab doesn't burn the
++ * cinematic — while the load timeout (which uses dtWall) keeps ticking.
++ */
++export function advance(s: BootState, dtWall: number, dtStory = dtWall): BootState {
++  if (s.stage === 'done' || dtWall <= 0) return s;
++  let n: BootState = { ...s, wall: s.wall + dtWall };
++
++  // Wall-clock timeout: the only thing that can turn "pending" into "failed"
++  // without a network result.
++  if (n.status === 'pending' && n.wall >= LOAD.TIMEOUT_S) n.status = 'failed';
++
++  const dt = dtStory * timeScale(n);
++
++  switch (n.stage) {
++    case 'story': {
++      n.story = Math.min(BEAT.DECISION, n.story + dt);
++      if (n.story >= BEAT.DECISION && n.status !== 'pending') {
++        n.stage = n.status === 'ok' ? 'catch' : 'impact';
++        n.branch = 0;
++      }
++      break;
++    }
++    case 'catch': {
++      n.branch += dt;
++      if (n.reducedMotion || n.branch >= BRANCH.CATCH_DUR) {
++        n.stage = 'reveal';
++        n.branch = 0;
++      }
++      break;
++    }
++    case 'reveal': {
++      // Never wipe to a blank page: hold until the portfolio is painted, but
++      // not forever — a stuck mount must not strand the visitor.
++      if (!n.appReady && n.revealWait < LOAD.APP_WAIT_MAX_S) {
++        n.revealWait += dtWall;
++        break;
++      }
++      n.branch += dt;
++      const dur = n.reducedMotion ? BRANCH.REDUCED_REVEAL_DUR : BRANCH.REVEAL_DUR;
++      if (n.branch >= dur) n.stage = 'done';
++      break;
++    }
++    case 'impact': {
++      n.branch += dt;
++      if (n.reducedMotion || n.branch >= BRANCH.ERROR_AT) n.stage = 'error';
++      break;
++    }
++    case 'error':
++      // Hold. Only retry()/enterAnyway() leave this stage.
++      break;
++  }
++  return n;
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/choreography.test.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/choreography.test.ts
+new file mode 100644
+index 0000000..dbb1280
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/choreography.test.ts
+@@ -0,0 +1,100 @@
++import { describe, it, expect } from 'vitest';
++import { frameAt, STAGE } from './choreography';
++import { createBoot, advance, resolve, markAppReady } from './bootMachine';
++import type { BootState } from './bootMachine';
++import { BEAT, BRANCH } from './bootConfig';
++import { JOINTS } from './rig';
++
++const opts = { reducedMotion: false, repeatVisit: false };
++const at = (patch: Partial<BootState>): BootState => ({ ...createBoot(opts), ...patch });
++const dist = (a: { x: number; y: number }, b: { x: number; y: number }) => Math.hypot(a.x - b.x, a.y - b.y);
++
++function allFinite(o: unknown): boolean {
++  if (typeof o === 'number') return Number.isFinite(o);
++  if (o && typeof o === 'object') return Object.values(o).every(allFinite);
++  return true;
++}
++
++describe('frameAt', () => {
++  it('produces finite numbers across the whole story and both branches', () => {
++    for (let t = 0; t <= BEAT.DECISION; t += 0.05) expect(allFinite(frameAt(at({ story: t, wall: t })))).toBe(true);
++    for (let b = 0; b <= 1.95; b += 0.05) {
++      expect(allFinite(frameAt(at({ story: BEAT.DECISION, stage: b < 1 ? 'catch' : 'reveal', branch: b < 1 ? b : b - 1, status: 'ok' })))).toBe(true);
++    }
++    for (let b = 0; b <= BRANCH.ERROR_AT + 1; b += 0.05) {
++      expect(allFinite(frameAt(at({ story: BEAT.DECISION, stage: b < BRANCH.ERROR_AT ? 'impact' : 'error', branch: b, status: 'failed' })))).toBe(true);
++    }
++  });
++
++  it('defines every joint for every actor', () => {
++    const f = frameAt(at({ story: 4, wall: 4 }));
++    for (const j of JOINTS) {
++      expect(Number.isFinite(f.miles.pose[j])).toBe(true);
++      expect(Number.isFinite(f.gwen.pose[j])).toBe(true);
++    }
++  });
++
++  it('has no teleport at story -> catch', () => {
++    const a = frameAt(at({ story: BEAT.DECISION, status: 'ok' }));
++    const b = frameAt(at({ story: BEAT.DECISION, stage: 'catch', branch: 0, status: 'ok' }));
++    expect(dist(a.miles, b.miles)).toBeLessThan(2);
++    expect(dist(a.gwen, b.gwen)).toBeLessThan(2);
++    expect(Math.abs(a.camera.zoom - b.camera.zoom)).toBeLessThan(0.02);
++  });
++
++  it('has no teleport at story -> impact', () => {
++    const a = frameAt(at({ story: BEAT.DECISION, status: 'failed' }));
++    const b = frameAt(at({ story: BEAT.DECISION, stage: 'impact', branch: 0, status: 'failed' }));
++    expect(dist(a.miles, b.miles)).toBeLessThan(2);
++    expect(dist(a.gwen, b.gwen)).toBeLessThan(2);
++  });
++
++  it('has no teleport at catch -> reveal', () => {
++    const a = frameAt(at({ story: BEAT.DECISION, stage: 'catch', branch: BRANCH.CATCH_DUR - 1e-4, status: 'ok' }));
++    const b = frameAt(at({ story: BEAT.DECISION, stage: 'reveal', branch: 0, status: 'ok' }));
++    expect(dist(a.miles, b.miles)).toBeLessThan(3);
++  });
++
++  it('Miles reaches Gwen by the decision point (close enough to read as contact)', () => {
++    const f = frameAt(at({ story: BEAT.DECISION }));
++    expect(dist(f.miles, f.gwen)).toBeLessThan(90);
++  });
++
++  it('Gwen actually reaches the ground on a miss, and stays there', () => {
++    const hit = frameAt(at({ story: BEAT.DECISION, stage: 'impact', branch: BRANCH.IMPACT_AT + 0.01, status: 'failed' }));
++    expect(hit.gwen.y).toBeGreaterThan(STAGE.GROUND - 60);
++    expect(hit.impact.t).toBeGreaterThanOrEqual(0);
++    const later = frameAt(at({ story: BEAT.DECISION, stage: 'error', branch: 3, status: 'failed' }));
++    expect(later.gwen.y).toBeGreaterThan(STAGE.GROUND - 60);
++  });
++
++  it('Gwen is above the ground the whole time before impact', () => {
++    for (let b = 0; b < BRANCH.IMPACT_AT - 0.02; b += 0.05) {
++      const f = frameAt(at({ story: BEAT.DECISION, stage: 'impact', branch: b, status: 'failed' }));
++      expect(f.gwen.y).toBeLessThan(STAGE.GROUND - 40);
++    }
++  });
++
++  it('web is not drawn before the thwip and is taut by the decision point', () => {
++    expect(frameAt(at({ story: BEAT.RESCUE - 0.1 })).web.grow).toBe(0);
++    const f = frameAt(at({ story: BEAT.DECISION }));
++    expect(f.web.grow).toBe(1);
++    expect(f.web.tension).toBeCloseTo(1, 1);
++  });
++
++  it('web snaps on a miss', () => {
++    expect(frameAt(at({ story: BEAT.DECISION, stage: 'impact', branch: 0.05, status: 'failed' })).web.snapped).toBe(false);
++    expect(frameAt(at({ story: BEAT.DECISION, stage: 'impact', branch: 0.4, status: 'failed' })).web.snapped).toBe(true);
++  });
++
++  it('plays end-to-end through the real machine without NaNs', () => {
++    let s = createBoot(opts);
++    for (let i = 0; i < 60 * 3; i++) s = advance(s, 1 / 60);
++    s = markAppReady(resolve(s, 'ok', s.attempt));
++    for (let i = 0; i < 60 * 6 && s.stage !== 'done'; i++) {
++      s = advance(s, 1 / 60);
++      expect(allFinite(frameAt(s))).toBe(true);
++    }
++    expect(s.stage).toBe('done');
++  });
++});
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/choreography.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/choreography.ts
+new file mode 100644
+index 0000000..06ae502
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/choreography.ts
+@@ -0,0 +1,354 @@
++// Pure choreography: BootState -> a complete description of one frame.
++// Everything here is in "stage space" (a 1600x900 canvas); the renderer maps
++// stage space to the viewport. No DOM, no randomness — same state, same frame.
++
++import { BEAT, BRANCH } from './bootConfig';
++import type { BootState } from './bootMachine';
++import { Actor, Pose, handWorld, chestWorld, headWorld, mixPose, withPose } from './rig';
++
++export const STAGE = {
++  W: 1600,
++  H: 900,
++  GROUND: 835,
++  /** Where Gwen hangs on to the left building's corner. */
++  LEDGE_L: { x: 700, y: 150 },
++  /** Where Miles perches on the right building's corner. */
++  LEDGE_R: { x: 1185, y: 330 },
++  /** Swing anchor (off-screen above) for the post-catch swing. */
++  ANCHOR: { x: 900, y: -500 },
++} as const;
++
++// ---------- easing / tracks ------------------------------------------------
++const clamp01 = (t: number) => Math.min(1, Math.max(0, t));
++const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
++export const easeInOut = (t: number) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
++export const easeOut = (t: number) => 1 - Math.pow(1 - t, 3);
++export const easeIn = (t: number) => t * t;
++
++type Key<T> = readonly [t: number, v: T];
++
++/** Piecewise-eased interpolation of numeric keyframes. */
++function num(t: number, keys: readonly Key<number>[], ease = easeInOut): number {
++  if (t <= keys[0][0]) return keys[0][1];
++  for (let i = 1; i < keys.length; i++) {
++    if (t <= keys[i][0]) {
++      const [t0, v0] = keys[i - 1], [t1, v1] = keys[i];
++      return lerp(v0, v1, ease((t - t0) / (t1 - t0)));
++    }
++  }
++  return keys[keys.length - 1][1];
++}
++
++function poseTrack(t: number, keys: readonly Key<Pose>[], ease = easeInOut): Pose {
++  if (t <= keys[0][0]) return keys[0][1];
++  for (let i = 1; i < keys.length; i++) {
++    if (t <= keys[i][0]) {
++      const [t0, p0] = keys[i - 1], [t1, p1] = keys[i];
++      return mixPose(p0, p1, ease((t - t0) / (t1 - t0)));
++    }
++  }
++  return keys[keys.length - 1][1];
++}
++
++// ---------- poses ----------------------------------------------------------
++const P = (o: Pose): Pose => o;
++
++const MILES = {
++  // Crouched on the ledge, watching the street.
++  perch: P({ torso: -30, head: 14, lShoulder: 38, lElbow: 28, rShoulder: 62, rElbow: 24,
++    lHip: 72, lKnee: -64, rHip: 88, rKnee: -58 }),
++  // Spider-sense hits: head snaps up, body locks.
++  sense: P({ torso: -18, head: -8, lShoulder: 20, lElbow: 70, rShoulder: 30, rElbow: 90,
++    lHip: 62, lKnee: -58, rHip: 76, rKnee: -52 }),
++  // Coiled, about to launch.
++  coil: P({ torso: -42, head: 6, lShoulder: -35, lElbow: 25, rShoulder: -20, rElbow: 20,
++    lHip: 96, lKnee: -92, rHip: 108, rKnee: -88 }),
++  // Head-first dive, arms back, legs trailing.
++  dive: P({ torso: 6, head: -12, lShoulder: -150, lElbow: 8, rShoulder: -165, rElbow: 6,
++    lHip: -18, lKnee: -14, rHip: -26, rKnee: -22 }),
++  // Right arm thrown forward to fire the web.
++  shoot: P({ torso: 4, head: -10, lShoulder: -120, lElbow: 20, rShoulder: 178, rElbow: 4,
++    lHip: -16, lKnee: -26, rHip: -30, rKnee: -34 }),
++  // Reaching, fully extended.
++  reach: P({ torso: 2, head: -8, lShoulder: 150, lElbow: 12, rShoulder: 172, rElbow: 2,
++    lHip: -8, lKnee: -18, rHip: -22, rKnee: -26 }),
++  // Holding Gwen.
++  hold: P({ torso: -6, head: 4, lShoulder: 62, lElbow: 70, rShoulder: 52, rElbow: 78,
++    lHip: 24, lKnee: -40, rHip: 38, rKnee: -50 }),
++  // Landed beside her, head bowed.
++  defeat: P({ torso: -34, head: 38, lShoulder: 28, lElbow: 14, rShoulder: 40, rElbow: 10,
++    lHip: 66, lKnee: -84, rHip: 78, rKnee: -78 }),
++};
++
++const GWEN = {
++  // Hanging from the ledge by one hand, the other scrabbling.
++  hang: P({ torso: 4, head: -6, lShoulder: 150, lElbow: 20, rShoulder: 178, rElbow: 2,
++    lHip: 10, lKnee: -22, rHip: 22, rKnee: -30 }),
++  // Grip failing — fingers slipping.
++  slip: P({ torso: 10, head: 8, lShoulder: 120, lElbow: 40, rShoulder: 150, rElbow: 10,
++    lHip: 16, lKnee: -30, rHip: 30, rKnee: -36 }),
++  // Free-falling, arms flailing up.
++  fall: P({ torso: -6, head: -14, lShoulder: 140, lElbow: 30, rShoulder: 165, rElbow: 20,
++    lHip: 32, lKnee: -44, rHip: 18, rKnee: -36 }),
++  // Reaching back for the web.
++  grab: P({ torso: -10, head: -16, lShoulder: 120, lElbow: 20, rShoulder: 170, rElbow: 4,
++    lHip: 26, lKnee: -38, rHip: 14, rKnee: -30 }),
++  // Held.
++  held: P({ torso: -4, head: 18, lShoulder: 30, lElbow: 60, rShoulder: 24, rElbow: 70,
++    lHip: 14, lKnee: -26, rHip: 26, rKnee: -34 }),
++  // On the ground.
++  down: P({ torso: 4, head: 10, lShoulder: 70, lElbow: 20, rShoulder: 100, rElbow: 14,
++    lHip: 40, lKnee: -20, rHip: 56, rKnee: -26 }),
++};
++
++// ---------- frame description ---------------------------------------------
++export type Caption = 'connect' | 'rescue' | 'catch' | 'miss';
++
++export interface Frame {
++  miles: Actor;
++  gwen: Actor;
++  camera: { cx: number; cy: number; zoom: number; roll: number; shake: number };
++  /** Web from Miles' hand to Gwen; `snapped` splits it into two retracting halves. */
++  web: { grow: number; tension: number; snapped: boolean; from: readonly [number, number]; to: readonly [number, number] };
++  /** Swing line from Miles' hand up to the anchor (success path). */
++  swing: { grow: number; from: readonly [number, number] };
++  /** Spider-sense burst progress 0..1 (or -1 when idle) plus a faint idle level. */
++  sense: { burst: number; level: number; at: readonly [number, number] };
++  speed: number;       // radial speed-line intensity 0..1
++  aberration: number;  // chromatic split 0..1
++  flash: number;       // white flash 0..1
++  glitch: number;      // glitch-bar intensity 0..1
++  impact: { t: number; at: readonly [number, number] }; // t: -1 idle, else 0..1 shock ring progress
++  reveal: { progress: number; cx: number; cy: number };  // web-wipe, stage coords
++  letterbox: number;   // 0..1
++  caption: Caption;
++  sfx: { thwip: boolean }; // convenience for renderer; edge detection lives in the hook
++  /** Progress 0..1 of the "THWIP!" lettering, or -1 when hidden. */
++  thwipT: number;
++}
++
++const ZERO_XY = [0, 0] as const;
++
++function gwenFall(story: number) {
++  // Gravity-like ease-in from the ledge hang to the catch height.
++  const t = Math.max(0, story - BEAT.FALL);
++  const k = (600 - 286) / Math.pow(BEAT.DECISION - BEAT.FALL, 2);
++  return { y: 286 + k * t * t, vy: 2 * k * t };
++}
++
++export function frameAt(s: BootState): Frame {
++  const t = s.story;
++  const wall = s.wall;
++
++  // ---- Gwen (story-driven until the decision point) -----------------------
++  const g = gwenFall(Math.min(t, BEAT.DECISION));
++  const gwenPose = poseTrack(t, [
++    [0, GWEN.hang], [BEAT.FALL - 0.05, GWEN.slip], [BEAT.FALL + 0.35, GWEN.fall],
++    [BEAT.RESCUE, GWEN.fall], [BEAT.RESCUE + 0.4, GWEN.grab],
++  ]);
++  const flail = Math.sin(wall * 9) * (t >= BEAT.FALL ? 14 : 5);
++  const gwen: Actor = {
++    x: num(t, [[0, 692], [BEAT.FALL, 692], [BEAT.DECISION, 722]], easeInOut),
++    y: t < BEAT.FALL ? 286 + Math.sin(wall * 3) * 3 : g.y,
++    rot: num(t, [[0, 0], [BEAT.FALL, 2], [BEAT.DECISION, 32]], easeIn),
++    scale: 1, flip: true,
++    pose: withPose(gwenPose, {
++      lShoulder: gwenPose.lShoulder + flail,
++      lElbow: gwenPose.lElbow + flail * 0.5,
++    }),
++  };
++
++  // ---- Miles ---------------------------------------------------------------
++  const milesPose = poseTrack(t, [
++    [0, MILES.perch], [BEAT.NOTICE - 0.05, MILES.perch], [BEAT.NOTICE + 0.2, MILES.sense],
++    [BEAT.NOTICE + 0.55, MILES.coil], [BEAT.NOTICE + 0.8, MILES.dive],
++    [BEAT.RESCUE - 0.1, MILES.dive], [BEAT.RESCUE + 0.15, MILES.shoot],
++    [BEAT.RESCUE + 0.9, MILES.shoot], [BEAT.DECISION, MILES.reach],
++  ]);
++  const breathe = t < BEAT.NOTICE ? Math.sin(wall * 2.4) * 2 : 0;
++  const miles: Actor = {
++    x: num(t, [
++      [0, 1310], [BEAT.NOTICE + 0.55, 1300], [BEAT.NOTICE + 0.85, 1230],
++      [BEAT.RESCUE, 1010], [BEAT.DECISION, 765],
++    ], easeInOut),
++    y: num(t, [
++      [0, 258], [BEAT.NOTICE + 0.55, 244], [BEAT.NOTICE + 0.85, 262],
++      [BEAT.RESCUE, 318], [BEAT.DECISION, 556],
++    ], easeInOut) + breathe,
++    rot: num(t, [
++      [0, 0], [BEAT.NOTICE + 0.55, -8], [BEAT.NOTICE + 0.85, -52],
++      [BEAT.RESCUE - 0.1, -148], [BEAT.DECISION, -166],
++    ], easeInOut),
++    scale: 1, flip: false, pose: milesPose,
++  };
++
++  // ---- Effects defaults ----------------------------------------------------
++  const frame: Frame = {
++    miles, gwen,
++    camera: { cx: 800, cy: 450, zoom: 1, roll: 0, shake: 0 },
++    web: { grow: 0, tension: 0, snapped: false, from: ZERO_XY, to: ZERO_XY },
++    swing: { grow: 0, from: ZERO_XY },
++    sense: { burst: -1, level: 0, at: ZERO_XY },
++    speed: 0, aberration: 0, flash: 0, glitch: 0,
++    impact: { t: -1, at: ZERO_XY },
++    reveal: { progress: 0, cx: 0, cy: 0 },
++    letterbox: num(t, [[0, 0], [0.8, 1]], easeOut),
++    caption: 'connect',
++    sfx: { thwip: false },
++    thwipT: -1,
++  };
++
++  // Camera while the story runs (also the hold frame at DECISION).
++  const midX = lerp(miles.x, gwen.x, 0.5), midY = lerp(miles.y, gwen.y, 0.5);
++  frame.camera.cx = num(t, [[0, 800], [BEAT.FALL, 830], [BEAT.NOTICE, 870], [BEAT.NOTICE + 0.3, 1300],
++    [BEAT.NOTICE + 1.1, 1040], [BEAT.RESCUE, 960], [BEAT.DECISION, midX]], easeInOut);
++  frame.camera.cy = num(t, [[0, 450], [BEAT.FALL, 420], [BEAT.NOTICE, 400], [BEAT.NOTICE + 0.3, 230],
++    [BEAT.NOTICE + 1.1, 330], [BEAT.RESCUE, 380], [BEAT.DECISION, midY]], easeInOut);
++  frame.camera.zoom = num(t, [[0, 1], [BEAT.NOTICE, 1.07], [BEAT.NOTICE + 0.3, 1.38],
++    [BEAT.NOTICE + 1.1, 1.0], [BEAT.RESCUE, 1.08], [BEAT.DECISION, 1.4]], easeInOut);
++  frame.camera.roll = num(t, [[0, 0], [BEAT.NOTICE + 0.85, -2.5], [BEAT.RESCUE, 3], [BEAT.DECISION, -3.5]], easeInOut);
++
++  // Spider-sense: one hard burst on notice, then a faint pulse while diving.
++  const sb = (t - BEAT.NOTICE) / 0.9;
++  frame.sense = {
++    burst: sb >= 0 && sb <= 1 ? sb : -1,
++    level: t >= BEAT.NOTICE ? num(t, [[BEAT.NOTICE, 1], [BEAT.NOTICE + 0.9, 0.35], [BEAT.DECISION, 0.5]]) : 0,
++    at: headWorld(miles),
++  };
++
++  // Shake: a short kick when the web fires.
++  const sinceThwip = t - BEAT.RESCUE;
++  if (sinceThwip >= 0 && sinceThwip < 0.5) {
++    frame.camera.shake = (1 - sinceThwip / 0.5) * 0.5;
++    frame.sfx.thwip = sinceThwip < 0.1;
++  }
++  if (sinceThwip >= 0 && sinceThwip < 0.9) frame.thwipT = sinceThwip / 0.9;
++  // Notice: tiny jolt.
++  const sinceNotice = t - BEAT.NOTICE;
++  if (sinceNotice >= 0 && sinceNotice < 0.35) frame.camera.shake = Math.max(frame.camera.shake, 0.35 * (1 - sinceNotice / 0.35));
++
++  // Speed lines build through the dive and the pull.
++  frame.speed = num(t, [[BEAT.NOTICE + 0.6, 0], [BEAT.NOTICE + 1.0, 0.8], [BEAT.RESCUE - 0.2, 0.55],
++    [BEAT.RESCUE + 0.2, 1], [BEAT.DECISION, 0.7]], easeInOut);
++  frame.aberration = Math.max(frame.speed * 0.35, frame.camera.shake * 0.6);
++  frame.caption = t >= BEAT.NOTICE ? 'rescue' : 'connect';
++
++  // Web: thwip out fast, then the line goes taut as he closes in.
++  const handM = handWorld(miles, 'r');
++  const targetG = handWorld(gwen, 'r');
++  frame.web.from = handM;
++  frame.web.to = targetG;
++  frame.web.grow = num(t, [[BEAT.RESCUE, 0], [BEAT.RESCUE + 0.28, 1]], easeOut);
++  frame.web.tension = num(t, [[BEAT.RESCUE + 0.28, 0], [BEAT.DECISION, 1]], easeIn);
++
++  // ---- Branches ------------------------------------------------------------
++  const b = s.branch;
++
++  if (s.stage === 'catch' || (s.stage === 'reveal' && !s.forced)) {
++    // Continuous pendulum swing over catch + reveal so velocity never resets.
++    const total = BRANCH.CATCH_DUR + BRANCH.REVEAL_DUR;
++    const bt = s.stage === 'catch' ? b : BRANCH.CATCH_DUR + b;
++    const u = clamp01(bt / total);
++    const A = STAGE.ANCHOR;
++    const R = Math.hypot(765 - A.x, 556 - A.y);
++    const th0 = Math.atan2(765 - A.x, 556 - A.y);
++    const th = th0 + (-85 * Math.PI / 180 - th0) * Math.pow(u, 1.6);
++    const grab = clamp01(bt / 0.35);
++
++    miles.x = A.x + R * Math.sin(th);
++    miles.y = A.y + R * Math.cos(th);
++    miles.rot = num(bt, [[0, -166], [0.55, -340], [total, -340 - 18]], easeInOut);
++    miles.pose = mixPose(MILES.reach, MILES.hold, easeOut(grab));
++
++    // Gwen is gathered into his arms, then rides along.
++    const chest = chestWorld(miles);
++    const held = { x: chest[0] - 4, y: chest[1] + 26 };
++    gwen.x = lerp(722, held.x, easeOut(grab));
++    gwen.y = lerp(600, held.y, easeOut(grab));
++    gwen.rot = lerp(32, miles.rot + 24, easeOut(grab));
++    gwen.pose = mixPose(GWEN.grab, GWEN.held, easeOut(grab));
++
++    frame.web.grow = 1 - easeOut(clamp01(bt / 0.2)); // the first web releases
++    frame.web.tension = 1;
++    frame.web.from = handWorld(miles, 'r');
++    frame.web.to = handWorld(gwen, 'r');
++    frame.swing = { grow: easeOut(clamp01((bt - 0.15) / 0.2)), from: handWorld(miles, 'l') };
++    frame.caption = 'catch';
++    frame.speed = num(bt, [[0.3, 0.2], [1.0, 1], [total, 0.8]], easeInOut);
++    frame.aberration = frame.speed * 0.4;
++    frame.camera.shake = bt < 0.25 ? 0.5 * (1 - bt / 0.25) : 0; // the catch lands
++    frame.camera.zoom = num(bt, [[0, 1.4], [0.5, 1.05], [total, 1.0]], easeOut);
++    frame.camera.cx = lerp(midX, miles.x, easeInOut(clamp01(bt / 1.2)));
++    frame.camera.cy = lerp(midY, miles.y, easeInOut(clamp01(bt / 1.2)));
++    frame.camera.roll = num(bt, [[0, -3.5], [total, 5]], easeInOut);
++    frame.flash = bt < 0.12 ? (1 - bt / 0.12) * 0.35 : 0;
++
++    if (s.stage === 'reveal') {
++      const r = clamp01(b / BRANCH.REVEAL_DUR);
++      frame.reveal = { progress: r, cx: miles.x, cy: miles.y };
++    }
++  } else if (s.stage === 'impact' || s.stage === 'error' || (s.stage === 'reveal' && s.forced)) {
++    const bb = s.stage === 'impact' ? b : s.stage === 'error' ? BRANCH.ERROR_AT + 1 : BRANCH.ERROR_AT + 1;
++    const ground = STAGE.GROUND - 56;
++
++    // Web goes slack, then snaps just after the decision point.
++    const snapAt = 0.18;
++    frame.web.snapped = bb >= snapAt;
++    frame.web.grow = frame.web.snapped ? clamp01(1 - (bb - snapAt) / 0.35) : 1;
++    frame.web.tension = frame.web.snapped ? 0 : 1;
++
++    // Gwen: continues her fall, faster than before, and hits the ground.
++    const v0 = gwenFall(BEAT.DECISION).vy;
++    const fallDist = ground - 600;
++    const A = (fallDist - v0 * BRANCH.IMPACT_AT) / (0.5 * BRANCH.IMPACT_AT * BRANCH.IMPACT_AT);
++    const fb = Math.min(bb, BRANCH.IMPACT_AT);
++    gwen.y = 600 + v0 * fb + 0.5 * A * fb * fb;
++    gwen.x = 722;
++    gwen.rot = num(fb, [[0, 32], [BRANCH.IMPACT_AT, 84]], easeIn);
++    gwen.pose = bb >= BRANCH.IMPACT_AT
++      ? mixPose(GWEN.fall, GWEN.down, easeOut(clamp01((bb - BRANCH.IMPACT_AT) / 0.25)))
++      : GWEN.fall;
++    if (bb >= BRANCH.IMPACT_AT) gwen.y = ground + 8;
++
++    // Miles: momentum carries him past, then he lands beside her, head bowed.
++    const land = BRANCH.IMPACT_AT + 0.35;
++    miles.x = num(bb, [[0, 765], [BRANCH.IMPACT_AT, 700], [land, 640], [BRANCH.ERROR_AT, 640]], easeInOut);
++    miles.y = num(bb, [[0, 556], [BRANCH.IMPACT_AT, 700], [land, STAGE.GROUND - 66], [BRANCH.ERROR_AT, STAGE.GROUND - 66]], easeIn);
++    miles.rot = num(bb, [[0, -166], [BRANCH.IMPACT_AT, -300], [land, -360]], easeInOut);
++    miles.pose = bb < BRANCH.IMPACT_AT
++      ? MILES.reach
++      : mixPose(MILES.reach, MILES.defeat, easeOut(clamp01((bb - BRANCH.IMPACT_AT) / 0.5)));
++
++    // The impact itself.
++    const si = bb - BRANCH.IMPACT_AT;
++    if (si >= 0) {
++      frame.impact = { t: clamp01(si / 0.6), at: [gwen.x, STAGE.GROUND] };
++      frame.camera.shake = si < 0.7 ? 1 - si / 0.7 : 0;
++      frame.flash = si < 0.14 ? (1 - si / 0.14) * 0.7 : 0;
++      frame.aberration = si < 0.8 ? 1 - si / 0.8 : 0;
++      frame.glitch = si < 0.5 ? 1 - si / 0.5 : 0;
++      frame.camera.zoom = num(si, [[0, 1.5], [BRANCH.ERROR_AT - BRANCH.IMPACT_AT, 1.22]], easeOut);
++      frame.camera.cx = lerp(midX, 700, 0.9);
++      frame.camera.cy = 540;
++      frame.camera.roll = 0;
++    } else {
++      frame.camera.zoom = num(bb, [[0, 1.4], [BRANCH.IMPACT_AT, 1.5]], easeIn);
++      frame.camera.cx = lerp(midX, 710, clamp01(bb / BRANCH.IMPACT_AT));
++      frame.camera.cy = lerp(midY, 540, clamp01(bb / BRANCH.IMPACT_AT));
++      frame.camera.roll = lerp(-3.5, 0, clamp01(bb / BRANCH.IMPACT_AT));
++    }
++    frame.sense.level = 0;
++    frame.speed = 0;
++    frame.caption = 'miss';
++    if (s.stage === 'error') {
++      frame.camera.shake = 0;
++      frame.impact = { t: 1, at: [gwen.x, STAGE.GROUND] };
++    }
++    if (s.stage === 'reveal' && s.forced) {
++      frame.reveal = { progress: clamp01(b / BRANCH.REVEAL_DUR), cx: STAGE.W / 2, cy: STAGE.H / 2 };
++      frame.camera.zoom = 1.22;
++    }
++  }
++
++  return frame;
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/particles.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/particles.ts
+new file mode 100644
+index 0000000..b3c7e3d
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/particles.ts
+@@ -0,0 +1,150 @@
++// Tiny canvas particle system: ambient dust/embers plus event bursts (web
++// sparks, spider-sense crackle, impact debris). Imperative and allocation-
++// light — a fixed pool, no per-frame object churn.
++
++import type { Frame } from './choreography';
++
++type Kind = 'dust' | 'ember' | 'spark' | 'debris' | 'dust-cloud';
++
++interface Particle {
++  active: boolean;
++  kind: Kind;
++  world: boolean; // true: stage space (moves with the camera); false: screen space
++  x: number; y: number; vx: number; vy: number;
++  life: number; max: number; size: number; color: string; g: number;
++}
++
++const COLORS = {
++  dust: 'rgba(235,240,255,', ember: 'rgba(255,70,80,', spark: 'rgba(244,247,255,',
++  debris: 'rgba(160,170,210,', cloud: 'rgba(210,200,230,',
++};
++
++export class ParticleSystem {
++  private pool: Particle[];
++  private prev: { thwip: boolean; impact: boolean; sense: boolean; caught: boolean } = { thwip: false, impact: false, sense: false, caught: false };
++  private ambientAcc = 0;
++  private seed = 1337;
++
++  constructor(capacity: number, private ambientRate: number) {
++    this.pool = Array.from({ length: capacity }, () => ({
++      active: false, kind: 'dust', world: false, x: 0, y: 0, vx: 0, vy: 0, life: 0, max: 1, size: 1, color: '', g: 0,
++    }));
++  }
++
++  private rand() {
++    // xorshift — deterministic & cheap; visuals don't need Math.random's cost.
++    this.seed ^= this.seed << 13; this.seed ^= this.seed >>> 17; this.seed ^= this.seed << 5;
++    return ((this.seed >>> 0) % 10000) / 10000;
++  }
++
++  private spawn(p: Partial<Particle> & Pick<Particle, 'kind' | 'x' | 'y'>) {
++    for (let i = 0; i < this.pool.length; i++) {
++      const q = this.pool[i];
++      if (q.active) continue;
++      Object.assign(q, {
++        active: true, world: false, vx: 0, vy: 0, life: 0, max: 1, size: 2, color: COLORS.dust, g: 0, ...p,
++      });
++      return;
++    }
++  }
++
++  /** Edge-detect story events from the frame and fire matching bursts. */
++  observe(f: Frame) {
++    const thwip = f.sfx.thwip;
++    if (thwip && !this.prev.thwip) this.burst('spark', f.web.from[0], f.web.from[1], 16, 360);
++    this.prev.thwip = thwip;
++
++    const sense = f.sense.burst >= 0 && f.sense.burst < 0.25;
++    if (sense && !this.prev.sense) this.burst('spark', f.sense.at[0], f.sense.at[1], 14, 280);
++    this.prev.sense = sense;
++
++    const impact = f.impact.t >= 0;
++    if (impact && !this.prev.impact) {
++      this.burst('debris', f.impact.at[0], f.impact.at[1], 30, 520, true);
++      this.burst('dust-cloud', f.impact.at[0], f.impact.at[1] - 10, 12, 180);
++    }
++    this.prev.impact = impact;
++
++    const caught = f.caption === 'catch' && f.flash > 0.2;
++    if (caught && !this.prev.caught) this.burst('spark', f.gwen.x, f.gwen.y, 18, 300);
++    this.prev.caught = caught;
++  }
++
++  burst(kind: Kind, x: number, y: number, n: number, speed: number, upward = false) {
++    for (let i = 0; i < n; i++) {
++      const a = upward ? -Math.PI * (0.1 + this.rand() * 0.8) : this.rand() * Math.PI * 2;
++      const sp = speed * (0.35 + this.rand() * 0.65);
++      this.spawn({
++        kind, world: true, x, y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp,
++        max: kind === 'dust-cloud' ? 1.1 + this.rand() * 0.6 : 0.55 + this.rand() * 0.6,
++        size: kind === 'dust-cloud' ? 26 + this.rand() * 26 : kind === 'debris' ? 3 + this.rand() * 5 : 2 + this.rand() * 3,
++        color: kind === 'debris' ? COLORS.debris : kind === 'dust-cloud' ? COLORS.cloud : COLORS.spark,
++        g: kind === 'debris' ? 900 : kind === 'dust-cloud' ? -20 : 120,
++      });
++    }
++  }
++
++  private ambient(dt: number, w: number, h: number) {
++    this.ambientAcc += dt * this.ambientRate;
++    while (this.ambientAcc >= 1) {
++      this.ambientAcc -= 1;
++      const ember = this.rand() < 0.3;
++      this.spawn({
++        kind: ember ? 'ember' : 'dust', world: false,
++        x: this.rand() * w, y: ember ? h * (0.7 + this.rand() * 0.3) : this.rand() * h,
++        vx: (this.rand() - 0.5) * 14, vy: ember ? -(24 + this.rand() * 40) : -(4 + this.rand() * 10),
++        max: ember ? 3 + this.rand() * 3 : 4 + this.rand() * 4,
++        size: ember ? 1.4 + this.rand() * 1.6 : 0.8 + this.rand() * 1.8,
++        color: ember ? COLORS.ember : COLORS.dust,
++      });
++    }
++  }
++
++  /**
++   * Advance and draw. `world` is the stage->screen matrix of the action layer
++   * (CSS px); `dpr` converts CSS px to canvas pixels.
++   */
++  step(dt: number, ctx: CanvasRenderingContext2D, w: number, h: number, dpr: number, world: DOMMatrix, ambient: boolean) {
++    if (ambient) this.ambient(dt, w, h);
++    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
++    ctx.clearRect(0, 0, w, h);
++    for (let i = 0; i < this.pool.length; i++) {
++      const p = this.pool[i];
++      if (!p.active) continue;
++      p.life += dt;
++      if (p.life >= p.max) { p.active = false; continue; }
++      p.vy += p.g * dt;
++      p.x += p.vx * dt;
++      p.y += p.vy * dt;
++      const t = p.life / p.max;
++      const alpha = (p.kind === 'dust-cloud' ? 0.32 : p.kind === 'ember' || p.kind === 'dust' ? 0.55 : 0.95) * (1 - t) * (t < 0.1 ? t / 0.1 : 1);
++      ctx.fillStyle = `${p.color}${alpha.toFixed(3)})`;
++      if (p.world) {
++        const sx = world.a * p.x + world.c * p.y + world.e;
++        const sy = world.b * p.x + world.d * p.y + world.f;
++        const s = p.size * Math.hypot(world.a, world.b) * (p.kind === 'dust-cloud' ? 1 + t * 1.6 : 1);
++        ctx.beginPath();
++        ctx.arc(sx, sy, s, 0, 6.2832);
++        ctx.fill();
++      } else {
++        ctx.beginPath();
++        ctx.arc(p.x, p.y, p.size, 0, 6.2832);
++        ctx.fill();
++      }
++    }
++  }
++
++  /** True while any event particle (spark/debris/cloud) is alive. */
++  hasBursts(): boolean {
++    for (let i = 0; i < this.pool.length; i++) {
++      const p = this.pool[i];
++      if (p.active && p.world) return true;
++    }
++    return false;
++  }
++
++  clear() {
++    for (const p of this.pool) p.active = false;
++    this.prev = { thwip: false, impact: false, sense: false, caught: false };
++  }
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/rig.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/rig.ts
+new file mode 100644
+index 0000000..0d461cd
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/rig.ts
+@@ -0,0 +1,111 @@
++// Articulated 2D rig shared by Miles and Gwen. Poses are joint angles in
++// degrees; the renderer applies them as nested SVG rotations (forward
++// kinematics for free), and `handWorld` below mirrors that chain in math so
++// effects like the web line can attach to a real hand position.
++//
++// Convention: characters face LEFT. Positive angle = clockwise on screen, so
++// a limb rotated +30 swings forward (left); a knee/elbow bends with
++// negative/positive respectively as noted in the pose tables.
++
++export const JOINTS = [
++  'torso', 'head',
++  'lShoulder', 'lElbow', 'rShoulder', 'rElbow',
++  'lHip', 'lKnee', 'rHip', 'rKnee',
++] as const;
++export type Joint = (typeof JOINTS)[number];
++export type Pose = Record<Joint, number>;
++
++/** Segment lengths in rig units (a standing figure is ~200 tall). */
++export const SEG = {
++  torso: 70, headR: 21, upperArm: 38, foreArm: 34, thigh: 46, shin: 46,
++} as const;
++
++/** Fixed attach point of each joint inside its parent's frame. */
++export const ORIGIN: Record<Joint, readonly [number, number]> = {
++  torso: [0, 0],
++  head: [0, -SEG.torso - 6],
++  lShoulder: [-4, -SEG.torso + 8],
++  rShoulder: [5, -SEG.torso + 10],
++  lElbow: [0, SEG.upperArm],
++  rElbow: [0, SEG.upperArm],
++  lHip: [-5, 2],
++  rHip: [6, 2],
++  lKnee: [0, SEG.thigh],
++  rKnee: [0, SEG.thigh],
++};
++
++export interface Actor {
++  x: number;
++  y: number;
++  rot: number;
++  scale: number;
++  flip: boolean;
++  pose: Pose;
++}
++
++export function mixPose(a: Pose, b: Pose, t: number): Pose {
++  const out = {} as Pose;
++  for (const j of JOINTS) out[j] = a[j] + (b[j] - a[j]) * t;
++  return out;
++}
++
++/** Set `deg` on an existing pose without mutating it. */
++export function withPose(base: Pose, patch: Partial<Pose>): Pose {
++  return { ...base, ...patch };
++}
++
++type P = readonly [number, number];
++const rad = (d: number) => (d * Math.PI) / 180;
++const rot = ([x, y]: P, deg: number): P => {
++  const c = Math.cos(rad(deg)), s = Math.sin(rad(deg));
++  return [x * c - y * s, x * s + y * c];
++};
++
++/** World position of a hand (near hand = 'r'), following the SVG nesting. */
++export function handWorld(a: Actor, side: 'l' | 'r' = 'r'): P {
++  const sh = side === 'r' ? 'rShoulder' : 'lShoulder';
++  const el = side === 'r' ? 'rElbow' : 'lElbow';
++  // hand in forearm frame -> elbow frame -> upper-arm frame -> torso frame
++  let p: P = [0, SEG.foreArm];
++  p = rot(p, a.pose[el]);
++  p = [p[0] + ORIGIN[el][0], p[1] + ORIGIN[el][1]];
++  p = rot(p, a.pose[sh]);
++  p = [p[0] + ORIGIN[sh][0], p[1] + ORIGIN[sh][1]];
++  p = rot(p, a.pose.torso);
++  // root frame -> world
++  p = [p[0] * (a.flip ? -1 : 1) * a.scale, p[1] * a.scale];
++  p = rot(p, a.rot);
++  return [p[0] + a.x, p[1] + a.y];
++}
++
++/** World position of the chest centre (good catch/hold target). */
++export function chestWorld(a: Actor): P {
++  let p: P = [0, -SEG.torso * 0.55];
++  p = rot(p, a.pose.torso);
++  p = [p[0] * (a.flip ? -1 : 1) * a.scale, p[1] * a.scale];
++  p = rot(p, a.rot);
++  return [p[0] + a.x, p[1] + a.y];
++}
++
++/** World position of the head centre. */
++export function headWorld(a: Actor): P {
++  let p: P = [ORIGIN.head[0], ORIGIN.head[1] - SEG.headR];
++  p = rot(p, a.pose.head);
++  p = [p[0] + 0, p[1]];
++  p = rot(p, a.pose.torso);
++  p = [p[0] * (a.flip ? -1 : 1) * a.scale, p[1] * a.scale];
++  p = rot(p, a.rot);
++  return [p[0] + a.x, p[1] + a.y];
++}
++
++/** Cache joint nodes once, then apply poses without querying the DOM again. */
++export function bindRig(root: SVGGElement): (pose: Pose) => void {
++  const nodes = {} as Record<Joint, SVGGElement>;
++  for (const j of JOINTS) nodes[j] = root.querySelector<SVGGElement>(`[data-j="${j}"]`)!;
++  return (pose) => {
++    for (const j of JOINTS) {
++      const [ox, oy] = ORIGIN[j];
++      nodes[j].setAttribute('transform', `translate(${ox} ${oy}) rotate(${pose[j].toFixed(1)})`);
++    }
++  };
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/FailureState.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/FailureState.tsx
+new file mode 100644
+index 0000000..815758c
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/FailureState.tsx
+@@ -0,0 +1,28 @@
++import { useEffect, useRef } from 'react';
++
++interface Props {
++  onRetry: () => void;
++  onEnter: () => void;
++}
++
++// The portfolio ships with complete static content, so entering without the
++// backend is a genuinely working option, not a dead end.
++export function FailureState({ onRetry, onEnter }: Props) {
++  const retryRef = useRef<HTMLButtonElement>(null);
++
++  useEffect(() => {
++    retryRef.current?.focus({ preventScroll: true });
++  }, []);
++
++  return (
++    <div className="boot-fail" role="alert" aria-labelledby="boot-fail-title" aria-describedby="boot-fail-desc">
++      <div className="boot-fail-kicker">// the spider-net is down</div>
++      <h2 className="boot-fail-title" id="boot-fail-title">The web connection failed.</h2>
++      <p className="boot-fail-desc" id="boot-fail-desc">Something went wrong while loading the portfolio.</p>
++      <div className="boot-fail-actions">
++        <button ref={retryRef} type="button" className="boot-btn" onClick={onRetry}>[ Try again ]</button>
++        <button type="button" className="boot-btn boot-btn-ghost" onClick={onEnter}>[ Enter portfolio anyway ]</button>
++      </div>
++    </div>
++  );
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Figure.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Figure.tsx
+new file mode 100644
+index 0000000..b349c1a
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Figure.tsx
+@@ -0,0 +1,145 @@
++import { memo } from 'react';
++import { SEG } from '../rig';
++
++// Original stylised vector characters — no traced or copied artwork. Drawn in
++// rig space facing LEFT with the hip at the origin; the nested <g data-j>
++// groups are rotated every frame by bindRig(). The component itself is
++// memoised and never re-renders, so animation costs zero React work.
++
++export type FigureKind = 'miles' | 'gwen';
++
++const PAL = {
++  miles: {
++    suit: '#0d0d16', out: '#040409', rimNear: '#ff3b45', rimFar: '#6a5cff',
++    accent: '#e62429', shoe: '#e62429', sole: '#f3f4f8', lens: '#f4f6ff', glow: '#7d8bff',
++  },
++  gwen: {
++    suit: '#eceef6', out: '#08080e', rimNear: '#ff6ec7', rimFar: '#44d8ff',
++    accent: '#14141c', shoe: '#f5f6fb', sole: '#44d8ff', lens: '#ffffff', glow: '#ff6ec7',
++  },
++} as const;
++
++type Colors = (typeof PAL)[FigureKind];
++
++function Seg({ len, w, c, near }: { len: number; w: number; c: Colors; near: boolean }) {
++  return (
++    <>
++      <line x1={0} y1={0} x2={0} y2={len} stroke={c.out} strokeWidth={w + 6} strokeLinecap="round" />
++      <line x1={0} y1={0} x2={0} y2={len} stroke={c.suit} strokeWidth={w} strokeLinecap="round" />
++      <line x1={-w * 0.3} y1={2} x2={-w * 0.3} y2={len - 2} stroke={near ? c.rimNear : c.rimFar}
++        strokeWidth={2.2} strokeLinecap="round" opacity={0.8} />
++    </>
++  );
++}
++
++function Arm({ side, c }: { side: 'l' | 'r'; c: Colors }) {
++  const near = side === 'r';
++  return (
++    <g data-j={`${side}Shoulder`}>
++      <Seg len={SEG.upperArm} w={12} c={c} near={near} />
++      <g data-j={`${side}Elbow`}>
++        <Seg len={SEG.foreArm} w={10.5} c={c} near={near} />
++        <circle cx={0} cy={SEG.foreArm + 3} r={7.4} fill={c.out} />
++        <circle cx={0} cy={SEG.foreArm + 3} r={5.4} fill={c.suit} />
++      </g>
++    </g>
++  );
++}
++
++function Leg({ side, c }: { side: 'l' | 'r'; c: Colors }) {
++  const near = side === 'r';
++  return (
++    <g data-j={`${side}Hip`}>
++      <Seg len={SEG.thigh} w={15} c={c} near={near} />
++      <g data-j={`${side}Knee`}>
++        <Seg len={SEG.shin} w={12.5} c={c} near={near} />
++        {/* shoe */}
++        <path d={`M -8 ${SEG.shin - 1} Q -17 ${SEG.shin + 4} -15 ${SEG.shin + 10} L 8 ${SEG.shin + 10} Q 11 ${SEG.shin + 3} 6 ${SEG.shin - 3} Z`}
++          fill={c.out} />
++        <path d={`M -7 ${SEG.shin} Q -14 ${SEG.shin + 4} -12.5 ${SEG.shin + 8} L 6.5 ${SEG.shin + 8} Q 8.5 ${SEG.shin + 3} 5 ${SEG.shin - 2} Z`}
++          fill={c.shoe} />
++        <rect x={-13} y={SEG.shin + 8} width={21} height={3.2} rx={1.6} fill={c.sole} />
++      </g>
++    </g>
++  );
++}
++
++function MilesHead({ c }: { c: Colors }) {
++  return (
++    <g data-j="head">
++      <circle cx={0} cy={-20} r={SEG.headR + 3} fill={c.out} />
++      <circle cx={0} cy={-20} r={SEG.headR} fill={c.suit} />
++      {/* red web lines on the mask */}
++      <g stroke={c.accent} strokeWidth={1.4} fill="none" strokeLinecap="round" opacity={0.9}>
++        <path d="M -2 -40 Q -4 -20 -2 0" />
++        <path d="M -20 -26 Q -6 -22 16 -28" />
++        <path d="M -19 -14 Q -6 -12 15 -16" />
++        <path d="M -14 -36 Q -9 -22 -12 -4" />
++        <path d="M 10 -36 Q 8 -22 11 -5" />
++      </g>
++      {/* lenses */}
++      <path d="M -17 -24 L -5 -27 L -4 -18 L -15 -16 Z" fill={c.lens} />
++      <path d="M 1 -27 L 12 -24 L 11 -15 L 0 -18 Z" fill={c.lens} />
++      <path d="M -17 -24 L -5 -27 L -4 -18 L -15 -16 Z" fill="none" stroke={c.glow} strokeWidth={1.2} opacity={0.8} />
++      <path d="M -19 -30 Q -4 -43 14 -34" stroke={c.rimNear} strokeWidth={2} fill="none" strokeLinecap="round" opacity={0.85} />
++    </g>
++  );
++}
++
++function GwenHead({ c }: { c: Colors }) {
++  return (
++    <g data-j="head">
++      {/* hood tail trailing behind (to the right, since she faces left) */}
++      <path d="M 12 -34 Q 40 -40 46 -16 Q 30 -22 14 -10 Z" fill={c.out} />
++      <path d="M 13 -32 Q 37 -37 42 -17 Q 29 -22 15 -12 Z" fill={c.suit} />
++      <circle cx={0} cy={-20} r={SEG.headR + 3} fill={c.out} />
++      <circle cx={0} cy={-20} r={SEG.headR} fill={c.suit} />
++      {/* face opening */}
++      <ellipse cx={-5} cy={-19} rx={15} ry={15.5} fill={c.accent} />
++      <path d="M -17 -25 L -7 -27 L -6 -19 L -15 -17 Z" fill={c.lens} />
++      <path d="M -2 -27 L 7 -25 L 6 -17 L -3 -19 Z" fill={c.lens} />
++      <path d="M -20 -34 Q -2 -44 14 -30" stroke={c.rimFar} strokeWidth={2.2} fill="none" strokeLinecap="round" />
++      <path d="M -20 -8 Q -4 4 14 -10" stroke={c.rimNear} strokeWidth={2.2} fill="none" strokeLinecap="round" />
++    </g>
++  );
++}
++
++function Torso({ kind, c }: { kind: FigureKind; c: Colors }) {
++  const body = 'M -18 -58 Q -21 -28 -12 0 L 12 0 Q 21 -28 18 -58 Q 0 -70 -18 -58 Z';
++  return (
++    <>
++      <path d={body} fill={c.out} stroke={c.out} strokeWidth={6} strokeLinejoin="round" />
++      <path d={body} fill={c.suit} />
++      <path d="M -17 -54 Q -19 -28 -11 -2" stroke={c.rimNear} strokeWidth={2.4} fill="none" strokeLinecap="round" opacity={0.85} />
++      <path d="M 17 -54 Q 19 -28 11 -2" stroke={c.rimFar} strokeWidth={2.2} fill="none" strokeLinecap="round" opacity={0.7} />
++      {kind === 'miles' ? (
++        // chest spider emblem
++        <g stroke={c.accent} strokeWidth={1.8} strokeLinecap="round" fill={c.accent}>
++          <ellipse cx={-3} cy={-38} rx={3.2} ry={5} />
++          <path d="M -6 -42 L -15 -48 M -6 -38 L -17 -38 M -6 -35 L -15 -29 M 0 -42 L 9 -48 M 0 -38 L 11 -38 M 0 -35 L 9 -29" fill="none" />
++        </g>
++      ) : (
++        // black belt stripe + side panel
++        <g>
++          <path d="M -12 0 L 12 0 L 13 -9 L -13 -9 Z" fill={c.accent} />
++          <path d="M 10 -56 Q 18 -30 11 -2 L 4 -2 Q 11 -30 4 -56 Z" fill={c.accent} opacity={0.9} />
++        </g>
++      )}
++    </>
++  );
++}
++
++export const Figure = memo(function Figure({ kind }: { kind: FigureKind }) {
++  const c = PAL[kind];
++  return (
++    <g data-j="torso">
++      {/* far limbs behind the torso */}
++      <Arm side="l" c={c} />
++      <Leg side="l" c={c} />
++      <Torso kind={kind} c={c} />
++      <Leg side="r" c={c} />
++      <g data-j="head-wrap">{kind === 'miles' ? <MilesHead c={c} /> : <GwenHead c={c} />}</g>
++      <Arm side="r" c={c} />
++    </g>
++  );
++});
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Fx.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Fx.tsx
+new file mode 100644
+index 0000000..dc73398
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Fx.tsx
+@@ -0,0 +1,90 @@
++import { memo } from 'react';
++
++// Static skeleton for the stage-space effects. Geometry is written every
++// frame by Stage.applyFx() through data-fx hooks — React never re-renders it.
++
++const STROKE_TEXT = { paintOrder: 'stroke' as const, strokeLinejoin: 'round' as const };
++
++export const Fx = memo(function Fx() {
++  return (
++    <g data-fx="root">
++      {/* swing line (success) */}
++      <g data-fx="swing" opacity={0}>
++        <path data-fx="swing-glow" fill="none" stroke="#8fb0ff" strokeWidth={9} strokeLinecap="round" opacity={0.3} pathLength={1} />
++        <path data-fx="swing-core" fill="none" stroke="#f4f7ff" strokeWidth={3} strokeLinecap="round" pathLength={1} />
++      </g>
++
++      {/* web from Miles to Gwen: one line, or two retracting halves once snapped */}
++      <g data-fx="web" opacity={0}>
++        <path data-fx="web-glow" fill="none" stroke="#8fb0ff" strokeWidth={10} strokeLinecap="round" opacity={0.32} pathLength={1} />
++        <path data-fx="web-core" fill="none" stroke="#f4f7ff" strokeWidth={3.2} strokeLinecap="round" pathLength={1} />
++        <path data-fx="web-half-a" fill="none" stroke="#f4f7ff" strokeWidth={3.2} strokeLinecap="round" pathLength={1} />
++        <path data-fx="web-half-b" fill="none" stroke="#f4f7ff" strokeWidth={3.2} strokeLinecap="round" pathLength={1} />
++      </g>
++
++      {/* spider-sense */}
++      <g data-fx="sense" opacity={0} fill="none">
++        <circle data-fx="sense-0" stroke="#f4f7ff" strokeWidth={3} />
++        <circle data-fx="sense-1" stroke="#6a5cff" strokeWidth={4} />
++        <circle data-fx="sense-2" stroke="#ff3b45" strokeWidth={2.5} />
++        <g data-fx="sense-ticks" stroke="#f4f7ff" strokeWidth={4} strokeLinecap="round">
++          {Array.from({ length: 8 }, (_, i) => {
++            const a = ((i * 45 - 90) * Math.PI) / 180;
++            return <line key={i} x1={Math.cos(a) * 62} y1={Math.sin(a) * 62} x2={Math.cos(a) * 92} y2={Math.sin(a) * 92} />;
++          })}
++        </g>
++      </g>
++
++      {/* comic lettering */}
++      <g data-fx="thwip" opacity={0}>
++        <text fontFamily="Bangers, Impact, sans-serif" fontSize={76} fill="#f4f7ff" stroke="#e62429" strokeWidth={9}
++          letterSpacing={3} textAnchor="middle" style={STROKE_TEXT}>THWIP!</text>
++      </g>
++
++      {/* impact */}
++      <g data-fx="impact" opacity={0}>
++        <ellipse data-fx="ring-0" fill="none" stroke="#f4f7ff" strokeWidth={5} />
++        <ellipse data-fx="ring-1" fill="none" stroke="#ff3b45" strokeWidth={4} />
++        <g data-fx="burst">
++          <polygon fill="#ffd23f" stroke="#08080e" strokeWidth={6} strokeLinejoin="round" points={burstPoints(150, 84, 14)} />
++          <text y={22} fontFamily="Bangers, Impact, sans-serif" fontSize={70} fill="#e62429" stroke="#08080e" strokeWidth={8}
++            letterSpacing={3} textAnchor="middle" style={STROKE_TEXT}>THUD!</text>
++        </g>
++        <g stroke="#08080e" strokeWidth={4} strokeLinecap="round" fill="none" opacity={0.9}>
++          <path d="M -20 0 l -60 14 l -34 -8" /><path d="M 20 0 l 70 10 l 40 -10" /><path d="M 0 4 l -8 24 l 14 20" />
++        </g>
++      </g>
++    </g>
++  );
++});
++
++/** Comic "burst" star polygon points. */
++function burstPoints(outer: number, inner: number, spikes: number): string {
++  const pts: string[] = [];
++  for (let i = 0; i < spikes * 2; i++) {
++    const r = i % 2 === 0 ? outer : inner + ((i * 37) % 13);
++    const a = (Math.PI * i) / spikes;
++    pts.push(`${(Math.cos(a) * r).toFixed(1)},${(Math.sin(a) * r * 0.78).toFixed(1)}`);
++  }
++  return pts.join(' ');
++}
++
++/** Screen-space radial speed lines — fixed geometry, driven by opacity/scale. */
++export const SpeedLines = memo(function SpeedLines({ count }: { count: number }) {
++  const lines = Array.from({ length: count }, (_, i) => {
++    const a = (i / count) * Math.PI * 2 + (i % 3) * 0.05;
++    const r0 = 0.62 + ((i * 53) % 17) / 100;
++    const r1 = 0.9 + ((i * 29) % 11) / 60;
++    return { a, r0, r1, w: 1 + ((i * 7) % 4) * 0.7 };
++  });
++  return (
++    <svg className="boot-speed" viewBox="-1 -1 2 2" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
++      <g data-fx="speed" stroke="#f4f7ff" strokeLinecap="round">
++        {lines.map((l, i) => (
++          <line key={i} x1={Math.cos(l.a) * l.r0} y1={Math.sin(l.a) * l.r0} x2={Math.cos(l.a) * l.r1} y2={Math.sin(l.a) * l.r1}
++            strokeWidth={l.w / 520} opacity={0.4} />
++        ))}
++      </g>
++    </svg>
++  );
++});
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Layers.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Layers.tsx
+new file mode 100644
+index 0000000..ec2cf6d
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Layers.tsx
+@@ -0,0 +1,262 @@
++import { memo, useMemo } from 'react';
++import { STAGE } from '../choreography';
++
++// Static environment art. Every layer is rendered once and then only ever
++// moved with a CSS transform by the camera, so none of this costs per frame.
++// Art spans far beyond the 1600x900 stage so any viewport aspect stays filled.
++
++const X0 = -1600, X1 = 3200, Y_TOP = -1600, Y_BOT = 2600;
++
++/** Tiny deterministic RNG so the skyline is identical every load. */
++function rng(seed: number) {
++  let s = seed >>> 0;
++  return () => {
++    s = (s + 0x6d2b79f5) >>> 0;
++    let t = s;
++    t = Math.imul(t ^ (t >>> 15), t | 1);
++    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
++    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
++  };
++}
++
++interface Tower { x: number; w: number; h: number; lit: string[]; }
++
++function skyline(seed: number, from: number, to: number, minW: number, maxW: number, minH: number, maxH: number, density: number): Tower[] {
++  const r = rng(seed);
++  const out: Tower[] = [];
++  const palette = ['#f6c177', '#f6c177', '#7fd0ff', '#ff5a64', '#c9b6ff'];
++  let x = from;
++  while (x < to) {
++    const w = minW + r() * (maxW - minW);
++    const h = minH + r() * (maxH - minH);
++    const lit: string[] = [];
++    const cols = Math.max(2, Math.floor(w / 18));
++    const rows = Math.floor(h / 26);
++    for (let ry = 0; ry < rows; ry++) {
++      for (let cx = 0; cx < cols; cx++) {
++        if (r() < density) {
++          lit.push(`${(8 + cx * ((w - 16) / cols)).toFixed(0)},${(14 + ry * 26).toFixed(0)},${palette[Math.floor(r() * palette.length)]}`);
++        }
++      }
++    }
++    out.push({ x, w, h, lit });
++    x += w + r() * 14;
++  }
++  return out;
++}
++
++function Towers({ list, base, fill, rim, windowSize }: { list: Tower[]; base: number; fill: string; rim: string; windowSize: number }) {
++  return (
++    <>
++      {list.map((t, i) => (
++        <g key={i} transform={`translate(${t.x.toFixed(0)} ${(base - t.h).toFixed(0)})`}>
++          <rect width={t.w} height={t.h + 2400} fill={fill} />
++          <rect width={t.w} height={3} fill={rim} opacity={0.7} />
++          {t.lit.map((s, k) => {
++            const [wx, wy, col] = s.split(',');
++            return <rect key={k} x={wx} y={wy} width={windowSize} height={windowSize * 1.3} fill={col} opacity={0.75} />;
++          })}
++        </g>
++      ))}
++    </>
++  );
++}
++
++const SVG_PROPS = {
++  className: 'boot-layer-svg',
++  preserveAspectRatio: 'xMidYMid slice' as const,
++  'aria-hidden': true,
++};
++
++export const SkyLayer = memo(function SkyLayer() {
++  return (
++    <svg {...SVG_PROPS} data-layer="sky" viewBox="0 0 1600 900">
++      <defs>
++        <linearGradient id="bSky" x1="0" y1="0" x2="0" y2="1">
++          <stop offset="0" stopColor="#03040a" />
++          <stop offset="0.5" stopColor="#0a0d1f" />
++          <stop offset="0.82" stopColor="#1b1030" />
++          <stop offset="1" stopColor="#3a1228" />
++        </linearGradient>
++        <radialGradient id="bMoon">
++          <stop offset="0" stopColor="#f2f6ff" stopOpacity="0.95" />
++          <stop offset="0.45" stopColor="#a6bff0" stopOpacity="0.28" />
++          <stop offset="1" stopColor="#a6bff0" stopOpacity="0" />
++        </radialGradient>
++        <radialGradient id="bRed">
++          <stop offset="0" stopColor="#e62429" stopOpacity="0.38" />
++          <stop offset="1" stopColor="#e62429" stopOpacity="0" />
++        </radialGradient>
++        <radialGradient id="bViolet">
++          <stop offset="0" stopColor="#6a5cff" stopOpacity="0.30" />
++          <stop offset="1" stopColor="#6a5cff" stopOpacity="0" />
++        </radialGradient>
++      </defs>
++      <rect x={X0} y={Y_TOP} width={X1 - X0} height={Y_BOT - Y_TOP} fill="url(#bSky)" />
++      <circle cx={330} cy={170} r={420} fill="url(#bMoon)" />
++      <circle cx={330} cy={170} r={46} fill="#eef3ff" opacity={0.9} />
++      <circle cx={1350} cy={760} r={640} fill="url(#bRed)" />
++      <circle cx={420} cy={620} r={560} fill="url(#bViolet)" />
++      {/* a few stars */}
++      {Array.from({ length: 36 }, (_, i) => {
++        const r = rng(i + 7);
++        return <circle key={i} cx={-200 + r() * 2000} cy={-100 + r() * 480} r={0.8 + r() * 1.4} fill="#fff" opacity={0.25 + r() * 0.5} />;
++      })}
++    </svg>
++  );
++});
++
++export const FarLayer = memo(function FarLayer() {
++  const towers = useMemo(() => skyline(11, X0, X1, 70, 150, 220, 520, 0.22), []);
++  return (
++    <svg {...SVG_PROPS} data-layer="far" viewBox="0 0 1600 900">
++      <defs>
++        <linearGradient id="bHaze" x1="0" y1="0" x2="0" y2="1">
++          <stop offset="0" stopColor="#2a1838" stopOpacity="0" />
++          <stop offset="1" stopColor="#4a1a34" stopOpacity="0.55" />
++        </linearGradient>
++      </defs>
++      <Towers list={towers} base={820} fill="#0b0f20" rim="#3a4a8a" windowSize={5} />
++      <rect x={X0} y={420} width={X1 - X0} height={1800} fill="url(#bHaze)" />
++    </svg>
++  );
++});
++
++export const MidLayer = memo(function MidLayer() {
++  const towers = useMemo(() => skyline(29, X0, X1, 90, 190, 300, 640, 0.18), []);
++  return (
++    <svg {...SVG_PROPS} data-layer="mid" viewBox="0 0 1600 900">
++      <Towers list={towers} base={860} fill="#070a16" rim="#e62429" windowSize={7} />
++      {/* rooftop details: water tower + antenna + neon signs */}
++      <g opacity={0.95}>
++        <g transform="translate(205 330)">
++          <rect x={-18} y={-26} width={36} height={32} rx={4} fill="#06080f" />
++          <path d="M -22 -26 L 0 -42 L 22 -26 Z" fill="#06080f" />
++          <path d="M -14 6 L -18 52 M 14 6 L 18 52" stroke="#06080f" strokeWidth={4} />
++        </g>
++        <path d="M 1010 390 L 1010 250 M 1000 290 L 1020 290 M 1003 320 L 1017 320" stroke="#06080f" strokeWidth={3} />
++        <circle cx={1010} cy={246} r={3} fill="#ff2a33" />
++        <g transform="translate(1260 520) rotate(-3)">
++          <rect x={-60} y={-18} width={120} height={36} rx={4} fill="#1a0509" stroke="#ff2a33" strokeWidth={2} />
++          <text x={0} y={7} textAnchor="middle" fontFamily="Bangers, Impact, sans-serif" fontSize={24} fill="#ff4650" letterSpacing={3}>EARTH-1610</text>
++        </g>
++        <g transform="translate(-30 560) rotate(2)">
++          <rect x={-46} y={-16} width={92} height={32} rx={4} fill="#08091c" stroke="#6a5cff" strokeWidth={2} />
++          <text x={0} y={7} textAnchor="middle" fontFamily="Bangers, Impact, sans-serif" fontSize={22} fill="#8f84ff" letterSpacing={3}>BROOKLYN</text>
++        </g>
++      </g>
++    </svg>
++  );
++});
++
++/** Brick-ish wall with window grid + graffiti, between two x extents. */
++function Wall({ x, w, top, flip }: { x: number; w: number; top: number; flip?: boolean }) {
++  const cols = Math.floor(w / 70);
++  const r = rng(x + 3);
++  const wins: { x: number; y: number; on: boolean; c: string }[] = [];
++  for (let cy = 0; cy < 22; cy++) {
++    for (let cx = 0; cx < Math.min(cols, 14); cx++) {
++      wins.push({ x: x + 30 + cx * 70, y: top + 70 + cy * 96, on: r() < 0.22, c: r() < 0.5 ? '#f6c177' : '#7fd0ff' });
++    }
++  }
++  return (
++    <g>
++      <rect x={x} y={top} width={w} height={Y_BOT} fill="#0a0c18" />
++      {/* parapet lip, lit from the moon side */}
++      <rect x={x} y={top} width={w} height={14} fill="#161a2e" />
++      <rect x={x} y={top} width={w} height={3} fill={flip ? '#ff3b45' : '#6a5cff'} opacity={0.85} />
++      <rect x={flip ? x : x + w - 3} y={top} width={3} height={Y_BOT} fill={flip ? '#ff3b45' : '#6a5cff'} opacity={0.35} />
++      {wins.map((m, i) => (
++        <rect key={i} x={m.x} y={m.y} width={34} height={54} rx={2} fill={m.on ? m.c : '#05060d'} opacity={m.on ? 0.55 : 1} />
++      ))}
++    </g>
++  );
++}
++
++export const ActionBackdrop = memo(function ActionBackdrop() {
++  const { LEDGE_L: L, LEDGE_R: R, GROUND } = STAGE;
++  return (
++    <svg {...SVG_PROPS} data-layer="backdrop" viewBox="0 0 1600 900">
++      <defs>
++        <linearGradient id="bStreet" x1="0" y1="0" x2="0" y2="1">
++          <stop offset="0" stopColor="#2a0f1e" />
++          <stop offset="0.12" stopColor="#0b0a14" />
++          <stop offset="1" stopColor="#040409" />
++        </linearGradient>
++        <linearGradient id="bCanyon" x1="0" y1="0" x2="0" y2="1">
++          <stop offset="0" stopColor="#12162c" stopOpacity="0" />
++          <stop offset="1" stopColor="#5a1a36" stopOpacity="0.5" />
++        </linearGradient>
++      </defs>
++      {/* canyon haze + street */}
++      <rect x={L.x} y={0} width={R.x - L.x} height={GROUND} fill="url(#bCanyon)" />
++      <rect x={X0} y={GROUND} width={X1 - X0} height={Y_BOT - GROUND} fill="url(#bStreet)" />
++      <rect x={X0} y={GROUND} width={X1 - X0} height={3} fill="#ff3b45" opacity={0.55} />
++      {/* wet-street reflections */}
++      {[420, 640, 880, 1100, 1320].map((rx, i) => (
++        <rect key={rx} x={rx} y={GROUND + 12 + (i % 2) * 18} width={90 + (i % 3) * 30} height={5} rx={2.5}
++          fill={i % 2 ? '#6a5cff' : '#ff3b45'} opacity={0.28} />
++      ))}
++      {/* the two buildings of the canyon */}
++      <Wall x={L.x - 1400} w={1400} top={L.y} flip />
++      <Wall x={R.x} w={1600} top={R.y} />
++      {/* graffiti: arrow + tag on the left wall, tag on the right */}
++      <g fill="none" strokeLinecap="round" strokeLinejoin="round" opacity={0.5}>
++        <path d="M 350 520 q 60 -70 150 -20 q 70 40 90 -30" stroke="#ffd23f" strokeWidth={7} />
++        <path d="M 572 440 l 20 28 l -34 8" stroke="#ffd23f" strokeWidth={7} />
++        <path d="M 120 620 q 70 -30 100 20 t 120 -10" stroke="#44d8ff" strokeWidth={6} />
++        <path d="M 1290 560 q 40 -50 90 -10 q 40 30 60 -20" stroke="#ff3b45" strokeWidth={7} />
++      </g>
++      <text x={1250} y={760} fontFamily="Bangers, Impact, sans-serif" fontSize={64} fill="#ff3b45" opacity={0.28}
++        transform="rotate(-6 1250 760)" letterSpacing={4}>WEB</text>
++      {/* fire escape on the right wall */}
++      <g stroke="#06070e" strokeWidth={4} fill="none" opacity={0.95}>
++        <path d={`M ${R.x + 30} ${R.y + 220} h 220 M ${R.x + 30} ${R.y + 330} h 220 M ${R.x + 30} ${R.y + 440} h 220`} />
++        <path d={`M ${R.x + 30} ${R.y + 220} v 220 M ${R.x + 250} ${R.y + 220} v 220`} />
++        <path d={`M ${R.x + 30} ${R.y + 330} l 220 110`} strokeWidth={3} />
++      </g>
++      {/* broken ledge Gwen is hanging from */}
++      <g>
++        <path d={`M ${L.x - 120} ${L.y} L ${L.x + 12} ${L.y} L ${L.x + 22} ${L.y + 18} L ${L.x - 6} ${L.y + 34} L ${L.x - 120} ${L.y + 30} Z`}
++          fill="#161a2e" />
++        <path d={`M ${L.x + 12} ${L.y} L ${L.x + 22} ${L.y + 18} L ${L.x + 4} ${L.y + 26}`} stroke="#ff3b45" strokeWidth={2} fill="none" opacity={0.8} />
++      </g>
++    </svg>
++  );
++});
++
++export const NearLayer = memo(function NearLayer() {
++  return (
++    <svg {...SVG_PROPS} data-layer="near" viewBox="0 0 1600 900">
++      {/* out-of-focus city lights (depth of field). Soft radial gradients rather
++          than a blur filter: same look, none of the per-frame filter cost. */}
++      <defs>
++        {[['bk1', '#ff3b45'], ['bk2', '#6a5cff'], ['bk3', '#44d8ff']].map(([id, c]) => (
++          <radialGradient key={id} id={id}>
++            <stop offset="0" stopColor={c} stopOpacity="0.55" />
++            <stop offset="0.55" stopColor={c} stopOpacity="0.3" />
++            <stop offset="1" stopColor={c} stopOpacity="0" />
++          </radialGradient>
++        ))}
++      </defs>
++      {[[110, 760, 120, 'bk1'], [280, 840, 80, 'bk2'], [1480, 790, 135, 'bk1'], [1320, 860, 90, 'bk3'], [1560, 90, 105, 'bk2'], [60, 70, 95, 'bk1']].map(([cx, cy, r, g], i) => (
++        <circle key={i} cx={cx as number} cy={cy as number} r={r as number} fill={`url(#${g})`} />
++      ))}
++      {/* overhead cables */}
++      <g stroke="#04050a" strokeWidth={3} fill="none" opacity={0.95}>
++        <path d="M -400 40 Q 400 190 1000 70 T 2200 140" />
++        <path d="M -400 90 Q 500 250 1200 120 T 2200 190" strokeWidth={2} opacity={0.8} />
++      </g>
++      {/* web corner, top-left */}
++      <g stroke="#e9eeff" fill="none" strokeLinecap="round" opacity={0.28} transform="translate(-60 -60)">
++        {[0, 12, 24, 36, 48, 60, 72, 84].map((a) => {
++          const rad = (a * Math.PI) / 180;
++          return <line key={a} x1={0} y1={0} x2={Math.cos(rad) * 420} y2={Math.sin(rad) * 420} strokeWidth={1.4} />;
++        })}
++        {[70, 130, 195, 265, 340].map((rr) => (
++          <path key={rr} d={`M ${rr} 0 Q ${rr * 0.78} ${rr * 0.2} ${rr * 0.72} ${rr * 0.72} Q ${rr * 0.2} ${rr * 0.78} 0 ${rr}`} strokeWidth={1.1} />
++        ))}
++      </g>
++    </svg>
++  );
++});
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/LoadingState.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/LoadingState.tsx
+new file mode 100644
+index 0000000..3546c84
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/LoadingState.tsx
+@@ -0,0 +1,20 @@
++import type { Caption } from '../choreography';
++
++const COPY: Record<Caption, { line: string; sub: string } | null> = {
++  connect: { line: 'Connecting to the Spider-Net…', sub: '// earth-1610 · loading portfolio' },
++  rescue: { line: 'Web-slinging…', sub: '// closing the distance' },
++  catch: { line: 'Got her.', sub: '// connection established' },
++  miss: null, // the impact speaks for itself; the failure card follows
++};
++
++/** Comic narration box. `key` re-triggers its pop-in whenever the line changes. */
++export function LoadingState({ caption }: { caption: Caption }) {
++  const c = COPY[caption];
++  if (!c) return null;
++  return (
++    <div className="boot-hud" key={caption}>
++      <div className="boot-caption">{c.line}</div>
++      <div className="boot-sub">{c.sub}</div>
++    </div>
++  );
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/RevealWeb.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/RevealWeb.tsx
+new file mode 100644
+index 0000000..20054b0
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/RevealWeb.tsx
+@@ -0,0 +1,44 @@
++import { forwardRef, memo } from 'react';
++
++// The web that "becomes the transition mask": a radial web whose rim tracks the
++// expanding clip-path hole in the overlay. Drawn once in a 100-unit space and
++// positioned/scaled each frame; sits above the portfolio it is revealing.
++
++export const WEB_SPOKES = 16;
++
++/** Scalloped (web-like) closed outline of radius `r`, in the given coords. */
++export function scallopPath(cx: number, cy: number, r: number, inward = 0.8): string {
++  const n = WEB_SPOKES;
++  const pt = (i: number, rad: number, off = 0) => {
++    const a = (i * 2 * Math.PI) / n + off;
++    return `${(cx + Math.cos(a) * rad).toFixed(1)} ${(cy + Math.sin(a) * rad).toFixed(1)}`;
++  };
++  let d = `M ${pt(0, r)}`;
++  for (let i = 0; i < n; i++) d += ` Q ${pt(i, r * inward, Math.PI / n)} ${pt(i + 1, r)}`;
++  return `${d} Z`;
++}
++
++const STRANDS = Array.from({ length: WEB_SPOKES }, (_, i) => {
++  const a = (i * 2 * Math.PI) / WEB_SPOKES;
++  return { x: Math.cos(a) * 100, y: Math.sin(a) * 100 };
++});
++const RINGS = [scallopPath(0, 0, 38), scallopPath(0, 0, 66), scallopPath(0, 0, 100)];
++
++export const RevealWeb = memo(
++  forwardRef<SVGGElement>(function RevealWeb(_, ref) {
++    return (
++      <div className="boot-reveal-web" aria-hidden="true">
++        <svg>
++          <g ref={ref} opacity={0} stroke="#f4f7ff" fill="none" strokeLinecap="round">
++            {STRANDS.map((s, i) => (
++              <line key={i} x1={0} y1={0} x2={s.x} y2={s.y} strokeWidth={1.6} vectorEffect="non-scaling-stroke" opacity={0.85} />
++            ))}
++            {RINGS.map((d, i) => (
++              <path key={i} d={d} strokeWidth={i === 2 ? 3.2 : 1.5} vectorEffect="non-scaling-stroke" opacity={i === 2 ? 1 : 0.7} />
++            ))}
++          </g>
++        </svg>
++      </div>
++    );
++  }),
++);
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Stage.tsx b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Stage.tsx
+new file mode 100644
+index 0000000..452f9bd
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/scene/Stage.tsx
+@@ -0,0 +1,319 @@
++import { forwardRef, useImperativeHandle, useLayoutEffect, useMemo, useRef } from 'react';
++import { Figure } from './Figure';
++import { ActionBackdrop, FarLayer, MidLayer, NearLayer, SkyLayer } from './Layers';
++import { Fx, SpeedLines } from './Fx';
++import { ParticleSystem } from '../particles';
++import { STAGE, easeOut } from '../choreography';
++import type { Frame } from '../choreography';
++import { bindRig } from '../rig';
++import type { Actor } from '../rig';
++
++// The compositor. React renders this skeleton exactly once; every frame after
++// that is a handful of transform/opacity/attribute writes through cached
++// element refs — no React work, no layout, GPU-composited layers.
++
++export interface StageHandle {
++  apply(frame: Frame, ghosts: Frame[], wall: number, dt: number, ambient: boolean): void;
++  /** Stage -> screen px using the action layer's current camera matrix. */
++  project(x: number, y: number): { x: number; y: number };
++  size(): { w: number; h: number };
++  /** 0 = full, 1 = lite (no extras), 2 = minimal (static backdrop only). */
++  setQuality(level: 0 | 1 | 2): void;
++  reset(): void;
++}
++
++interface Props { lowPower: boolean; }
++
++// parallax / zoom / roll depth per layer
++const DEPTH = {
++  sky: { p: 0.08, z: 0.15 },
++  far: { p: 0.22, z: 0.35 },
++  mid: { p: 0.5, z: 0.65 },
++  action: { p: 1, z: 1 },
++  near: { p: 1.35, z: 1.3 },
++} as const;
++type LayerKey = keyof typeof DEPTH;
++
++const actorTransform = (a: Actor) =>
++  `translate(${a.x.toFixed(1)} ${a.y.toFixed(1)}) rotate(${a.rot.toFixed(1)}) scale(${a.flip ? -a.scale : a.scale} ${a.scale})`;
++
++function computeView(W: number, H: number) {
++  const aspect = W / H;
++  let vbW: number, vbH: number, cx: number;
++  if (aspect >= 16 / 9) { vbH = STAGE.H; vbW = STAGE.H * aspect; cx = 800; }
++  else if (aspect >= 1) { vbW = STAGE.W; vbH = STAGE.W / aspect; cx = 800; }
++  else { vbW = 820; vbH = 820 / aspect; cx = 1000; } // portrait: frame just the action
++  return { vbW, vbH, cx, cy: 450, k: W / vbW };
++}
++
++export const Stage = forwardRef<StageHandle, Props>(function Stage({ lowPower }, ref) {
++  const root = useRef<HTMLDivElement>(null);
++  const canvas = useRef<HTMLCanvasElement>(null);
++  const view = useRef({ W: 1, H: 1, vbW: 1600, vbH: 900, cx: 800, cy: 450, k: 1, dpr: 1 });
++  const world = useRef(new DOMMatrix());
++  const quality = useRef<0 | 1 | 2>(0);
++  const frameNo = useRef(0);
++  const particles = useMemo(() => new ParticleSystem(lowPower ? 70 : 160, lowPower ? 5 : 11), [lowPower]);
++  const els = useRef<{
++    layers: Record<LayerKey, HTMLElement>;
++    miles: SVGGElement; gwen: SVGGElement; ghostA: SVGGElement; ghostB: SVGGElement;
++    bind: Record<'miles' | 'gwen' | 'ghostA' | 'ghostB', (p: Actor['pose']) => void>;
++    fx: Record<string, SVGElement>;
++    speed: SVGElement; flash: HTMLElement; glitch: HTMLElement; barT: HTMLElement; barB: HTMLElement;
++    svgs: SVGSVGElement[];
++  } | null>(null);
++
++  useLayoutEffect(() => {
++    const r = root.current!;
++    const q = <T extends Element>(s: string) => r.querySelector<T>(s)!;
++    const fx: Record<string, SVGElement> = {};
++    r.querySelectorAll<SVGElement>('[data-fx]').forEach((n) => { fx[n.dataset.fx!] = n; });
++    const miles = q<SVGGElement>('[data-actor="miles"]');
++    const gwen = q<SVGGElement>('[data-actor="gwen"]');
++    const ghostA = q<SVGGElement>('[data-actor="ghostA"]');
++    const ghostB = q<SVGGElement>('[data-actor="ghostB"]');
++    els.current = {
++      layers: {
++        sky: q('[data-cam="sky"]'), far: q('[data-cam="far"]'), mid: q('[data-cam="mid"]'),
++        action: q('[data-cam="action"]'), near: q('[data-cam="near"]'),
++      },
++      miles, gwen, ghostA, ghostB,
++      bind: { miles: bindRig(miles), gwen: bindRig(gwen), ghostA: bindRig(ghostA), ghostB: bindRig(ghostB) },
++      fx,
++      speed: fx['speed'],
++      flash: q('.boot-flash'), glitch: q('.boot-glitch'), barT: q('.boot-bar-top'), barB: q('.boot-bar-bottom'),
++      svgs: Array.from(r.querySelectorAll<SVGSVGElement>('svg.boot-layer-svg')),
++    };
++
++    const measure = () => {
++      const W = r.clientWidth || 1, H = r.clientHeight || 1;
++      const dpr = Math.min(window.devicePixelRatio || 1, lowPower ? 1.25 : 1.75);
++      const v = computeView(W, H);
++      view.current = { W, H, dpr, ...v };
++      // svgs are 150% of the viewport (see boot.css), so their viewBox is too
++      const bw = v.vbW * 1.5, bh = v.vbH * 1.5;
++      const x = v.cx - bw / 2, y = v.cy - bh / 2;
++      els.current!.svgs.forEach((s) => s.setAttribute('viewBox', `${x} ${y} ${bw} ${bh}`));
++      const c = canvas.current!;
++      c.width = Math.round(W * dpr); c.height = Math.round(H * dpr);
++    };
++    measure();
++    const ro = new ResizeObserver(measure);
++    ro.observe(r);
++    return () => { ro.disconnect(); els.current = null; particles.clear(); };
++  }, [lowPower, particles]);
++
++  useImperativeHandle(ref, () => ({
++    apply(f, ghosts, wall, dt, ambient) {
++      const e = els.current;
++      if (!e) return;
++      const v = view.current;
++      const cam = f.camera;
++      const amp = cam.shake * Math.min(v.W, v.H) * 0.03;
++      const nx = Math.sin(wall * 83) + Math.sin(wall * 131.7) * 0.5;
++      const ny = Math.sin(wall * 97.3 + 1.7) + Math.sin(wall * 151.1 + 0.4) * 0.5;
++
++      // ---- camera: one matrix per depth layer ----
++      (Object.keys(DEPTH) as LayerKey[]).forEach((key) => {
++        // minimal quality: the three background layers + foreground are frozen/hidden
++        if (quality.current === 2 && key !== 'action') return;
++        const { p, z } = DEPTH[key];
++        const dx = (cam.cx - v.cx) * v.k * p;
++        const dy = (cam.cy - v.cy) * v.k * p;
++        const m = new DOMMatrix()
++          .translate(v.W / 2 + nx * amp * (0.6 + p * 0.4), v.H / 2 + ny * amp * (0.6 + p * 0.4))
++          .rotate(cam.roll * (0.5 + p * 0.5))
++          .scale(1 + (cam.zoom - 1) * z)
++          .translate(-v.W / 2 - dx, -v.H / 2 - dy);
++        e.layers[key].style.transform = `matrix(${m.a},${m.b},${m.c},${m.d},${m.e},${m.f})`;
++        if (key === 'action') {
++          // stage -> screen for particles & reveal: camera matrix after base fit
++          world.current = m.multiply(new DOMMatrix().translate(v.W / 2, v.H / 2).scale(v.k).translate(-v.cx, -v.cy));
++        }
++      });
++
++      // ---- actors ----
++      e.miles.setAttribute('transform', actorTransform(f.miles)); e.bind.miles(f.miles.pose);
++      e.gwen.setAttribute('transform', actorTransform(f.gwen)); e.bind.gwen(f.gwen.pose);
++      const gA = quality.current === 0 ? ghosts[0] : undefined, gB = quality.current === 0 ? ghosts[1] : undefined;
++      e.ghostA.style.opacity = gA ? '0.34' : '0';
++      e.ghostB.style.opacity = gB ? '0.16' : '0';
++      if (gA) { e.ghostA.setAttribute('transform', actorTransform(gA.miles)); e.bind.ghostA(gA.miles.pose); }
++      if (gB) { e.ghostB.setAttribute('transform', actorTransform(gB.miles)); e.bind.ghostB(gB.miles.pose); }
++
++      // ---- effects ----
++      applyFx(e.fx, f);
++      e.speed.style.opacity = String(quality.current === 0 ? Math.min(1, f.speed) * 0.8 : 0);
++      e.speed.style.transform = `scale(${1 + f.speed * 0.12}) rotate(${(Math.floor(wall * 24) % 3) * 1.5}deg)`;
++      e.flash.style.opacity = String(f.flash);
++      applyGlitch(e.glitch, quality.current === 2 ? 0 : f.glitch, wall);
++      const lb = easeOut(f.letterbox);
++      e.barT.style.transform = `translateY(${(lb - 1) * 100}%)`;
++      e.barB.style.transform = `translateY(${(1 - lb) * 100}%)`;
++      // chromatic aberration only in short bursts, and never on weak devices
++      e.layers.action.style.filter = !lowPower && quality.current === 0 && f.aberration > 0.06
++        ? `drop-shadow(${(f.aberration * 5).toFixed(1)}px 0 0 rgba(255,40,70,.55)) drop-shadow(${(-f.aberration * 5).toFixed(1)}px 0 0 rgba(0,210,255,.55))`
++        : '';
++
++      // ---- particles (screen-space canvas) ----
++      const ctx = canvas.current?.getContext('2d');
++      // Ambient-only dust is imperceptible above 30 Hz, so redraw it every
++      // other frame; event bursts (impact, web sparks) always redraw.
++      if (ctx && quality.current < 2) {
++        particles.observe(f);
++        frameNo.current++;
++        if (particles.hasBursts() || frameNo.current % 2 === 0) {
++          const step = particles.hasBursts() ? dt : dt * 2;
++          particles.step(step, ctx, v.W, v.H, v.dpr, world.current, ambient && quality.current === 0);
++        }
++      }
++    },
++    project(x, y) {
++      const m = world.current;
++      return { x: m.a * x + m.c * y + m.e, y: m.b * x + m.d * y + m.f };
++    },
++    size: () => ({ w: view.current.W, h: view.current.H }),
++    setQuality(level) {
++      quality.current = level;
++      const e = els.current;
++      if (!e) return;
++      const hide = (el: HTMLElement | null | undefined, on: boolean) => { if (el) el.style.display = on ? 'none' : ''; };
++      hide(root.current?.querySelector('.boot-halftone'), level >= 1);
++      hide(canvas.current, level >= 2);
++      hide(e.layers.far, level >= 2);
++      hide(e.layers.mid, level >= 2);
++      hide(e.layers.near, level >= 2);
++      if (level >= 1) e.layers.action.style.filter = '';
++    },
++    reset() {
++      particles.clear();
++    },
++  }), [lowPower, particles]);
++
++  return (
++    <div ref={root} className="boot-stage">
++      <div className="boot-layer boot-layer-sky" data-cam="sky"><SkyLayer /></div>
++      <div className="boot-layer boot-layer-far" data-cam="far"><FarLayer /></div>
++      <div className="boot-layer boot-layer-mid" data-cam="mid"><MidLayer /></div>
++      <div className="boot-layer boot-layer-action" data-cam="action">
++        <ActionBackdrop />
++        <svg className="boot-layer-svg" viewBox="0 0 1600 900" preserveAspectRatio="xMidYMid slice" aria-hidden="true" data-layer="actors">
++          <g data-actor="ghostB" opacity={0}><Figure kind="miles" /></g>
++          <g data-actor="ghostA" opacity={0}><Figure kind="miles" /></g>
++          <g data-actor="gwen"><Figure kind="gwen" /></g>
++          <g data-actor="miles"><Figure kind="miles" /></g>
++          <Fx />
++        </svg>
++      </div>
++      <div className="boot-layer boot-layer-near" data-cam="near"><NearLayer /></div>
++
++      <canvas ref={canvas} className="boot-particles" aria-hidden="true" />
++      <SpeedLines count={lowPower ? 18 : 34} />
++      <div className="boot-halftone" aria-hidden="true" />
++      <div className="boot-vignette" aria-hidden="true" />
++      <div className="boot-glitch" aria-hidden="true">
++        <i /><i /><i />
++      </div>
++      <div className="boot-flash" aria-hidden="true" />
++      <div className="boot-bar boot-bar-top" aria-hidden="true" />
++      <div className="boot-bar boot-bar-bottom" aria-hidden="true" />
++    </div>
++  );
++});
++
++// ---------------------------------------------------------------------------
++
++const set = (el: SVGElement | undefined, k: string, v: string) => el?.setAttribute(k, v);
++
++function applyFx(fx: Record<string, SVGElement>, f: Frame) {
++  // web
++  const w = f.web;
++  const showWeb = w.grow > 0.002;
++  set(fx['web'], 'opacity', showWeb ? '1' : '0');
++  if (showWeb) {
++    const [x0, y0] = w.from, [x1, y1] = w.to;
++    const sag = (1 - w.tension) * 80;
++    const mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + sag;
++    if (!w.snapped) {
++      const d = `M ${x0.toFixed(1)} ${y0.toFixed(1)} Q ${mx.toFixed(1)} ${my.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
++      const dash = `${w.grow.toFixed(3)} 2`;
++      for (const k of ['web-glow', 'web-core']) { set(fx[k], 'd', d); set(fx[k], 'stroke-dasharray', dash); }
++      set(fx['web-half-a'], 'opacity', '0'); set(fx['web-half-b'], 'opacity', '0');
++      set(fx['web-core'], 'opacity', '1'); set(fx['web-glow'], 'opacity', '0.32');
++    } else {
++      set(fx['web-core'], 'opacity', '0'); set(fx['web-glow'], 'opacity', '0');
++      const droop = my + 40;
++      set(fx['web-half-a'], 'd', `M ${x0.toFixed(1)} ${y0.toFixed(1)} Q ${((x0 + mx) / 2).toFixed(1)} ${droop.toFixed(1)} ${mx.toFixed(1)} ${(my + 60).toFixed(1)}`);
++      set(fx['web-half-b'], 'd', `M ${x1.toFixed(1)} ${y1.toFixed(1)} Q ${((x1 + mx) / 2).toFixed(1)} ${droop.toFixed(1)} ${mx.toFixed(1)} ${(my + 60).toFixed(1)}`);
++      for (const k of ['web-half-a', 'web-half-b']) { set(fx[k], 'stroke-dasharray', `${w.grow.toFixed(3)} 2`); set(fx[k], 'opacity', '1'); }
++    }
++  }
++
++  // swing line
++  const sw = f.swing;
++  set(fx['swing'], 'opacity', sw.grow > 0.002 ? '1' : '0');
++  if (sw.grow > 0.002) {
++    const d = `M ${sw.from[0].toFixed(1)} ${sw.from[1].toFixed(1)} L ${STAGE.ANCHOR.x} ${STAGE.ANCHOR.y}`;
++    for (const k of ['swing-glow', 'swing-core']) { set(fx[k], 'd', d); set(fx[k], 'stroke-dasharray', `${sw.grow.toFixed(3)} 2`); }
++  }
++
++  // spider-sense
++  const sb = f.sense.burst;
++  set(fx['sense'], 'opacity', sb >= 0 ? '1' : '0');
++  if (sb >= 0) {
++    fx['sense'].setAttribute('transform', `translate(${f.sense.at[0].toFixed(1)} ${f.sense.at[1].toFixed(1)})`);
++    for (let i = 0; i < 3; i++) {
++      const c = fx[`sense-${i}`];
++      const t = Math.max(0, sb - i * 0.1);
++      set(c, 'r', (30 + t * (220 + i * 80)).toFixed(1));
++      set(c, 'opacity', Math.max(0, 1 - t * 1.15).toFixed(3));
++    }
++    set(fx['sense-ticks'], 'opacity', Math.max(0, 1 - sb * 2.4).toFixed(3));
++    set(fx['sense-ticks'], 'transform', `scale(${(1 + sb * 0.7).toFixed(3)})`);
++  }
++
++  // THWIP!
++  const th = f.thwipT;
++  set(fx['thwip'], 'opacity', th >= 0 ? (th > 0.75 ? (1 - th) * 4 : 1).toFixed(3) : '0');
++  if (th >= 0) {
++    const pop = th < 0.2 ? 0.4 + (th / 0.2) * 0.8 : 1.2 - Math.min(0.2, (th - 0.2) * 0.4);
++    fx['thwip'].setAttribute('transform',
++      `translate(${(f.web.from[0] - 60).toFixed(1)} ${(f.web.from[1] - 70).toFixed(1)}) rotate(-8) scale(${pop.toFixed(3)})`);
++  }
++
++  // impact
++  const it = f.impact.t;
++  set(fx['impact'], 'opacity', it >= 0 && it < 1 ? '1' : '0');
++  if (it >= 0 && it < 1) {
++    const [ix, iy] = f.impact.at;
++    fx['impact'].setAttribute('transform', `translate(${ix.toFixed(1)} ${iy.toFixed(1)})`);
++    for (let i = 0; i < 2; i++) {
++      const c = fx[`ring-${i}`];
++      const t = Math.max(0, it - i * 0.12);
++      const rx = 30 + t * (460 + i * 160);
++      set(c, 'rx', rx.toFixed(1)); set(c, 'ry', (rx * 0.2).toFixed(1));
++      set(c, 'opacity', Math.max(0, 1 - t * 1.1).toFixed(3));
++    }
++    const pop = it < 0.18 ? 0.3 + (it / 0.18) * 0.9 : 1.2 - Math.min(0.2, (it - 0.18) * 0.4);
++    fx['burst'].setAttribute('transform', `translate(10 -250) rotate(-7) scale(${pop.toFixed(3)})`);
++    fx['burst'].setAttribute('opacity', it > 0.7 ? Math.max(0, (1 - it) / 0.3).toFixed(3) : '1');
++  }
++}
++
++/** Three horizontal slice bars that jump around while `amount` > 0. */
++function applyGlitch(el: HTMLElement, amount: number, wall: number) {
++  if (amount < 0.04) { if (el.style.display !== 'none') el.style.display = 'none'; return; }
++  if (el.style.display !== 'block') el.style.display = 'block';
++  const bars = el.children;
++  const step = Math.floor(wall * 30);
++  for (let i = 0; i < bars.length; i++) {
++    const b = bars[i] as HTMLElement;
++    const h = 2 + ((step * (i + 3)) % 9) * 1.5;
++    const y = ((step * 37 + i * 211) % 100);
++    const x = (((step * (i + 5)) % 21) - 10) * amount * 2.4;
++    b.style.height = `${h.toFixed(1)}%`;
++    b.style.top = `${y}%`;
++    b.style.transform = `translateX(${x.toFixed(1)}%)`;
++    b.style.opacity = String(amount * (i === 1 ? 0.8 : 0.55));
++  }
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/boot/useBootSequence.ts b/miles-morales-portfolio-fullstack/frontend/src/boot/useBootSequence.ts
+new file mode 100644
+index 0000000..c67b46c
+--- /dev/null
++++ b/miles-morales-portfolio-fullstack/frontend/src/boot/useBootSequence.ts
+@@ -0,0 +1,181 @@
++import { useCallback, useEffect, useRef, useState } from 'react';
++import { advance, createBoot, enterAnyway, markAppReady, resolve, retry as retryMachine } from './bootMachine';
++import type { BootState, LoadStatus, Stage } from './bootMachine';
++import { frameAt } from './choreography';
++import type { Caption, Frame } from './choreography';
++import { BEAT, BRANCH, STORAGE_KEY_SEEN } from './bootConfig';
++import { loadLiveData, restartLiveData } from '../data/useResumeData';
++import type { LoadOutcome } from '../data/useResumeData';
++import { playCue } from './bootAudio';
++
++// Glue between the pure machine and the real world: owns the single rAF loop,
++// binds the real load promise to the current attempt, plays audio cues on
++// story edges, and tears everything down on unmount.
++
++export interface BootUi {
++  stage: Stage;
++  status: LoadStatus;
++  caption: Caption;
++  attempt: number;
++  /** The portfolio must be mounted underneath before the reveal can show it. */
++  appNeeded: boolean;
++}
++
++interface Options {
++  reducedMotion: boolean;
++  repeatVisit: boolean;
++  render: (s: BootState, f: Frame, ghosts: Frame[], dt: number) => void;
++  onReset: () => void;
++  onDone: () => void;
++  /** Fired when sustained slow frames make the cinematic shed detail. */
++  onQuality: (level: 1 | 2) => void;
++}
++
++const same = (a: BootUi, b: BootUi) =>
++  a.stage === b.stage && a.status === b.status && a.caption === b.caption && a.attempt === b.attempt && a.appNeeded === b.appNeeded;
++
++/** A background tab can leave a multi-second gap between frames. */
++const HIDDEN_GAP_S = 0.5;
++
++// Quality governor: if the smoothed frame time stays above ~24 fps, shed
++// detail (extras first, then whole layers). It only ever steps down, so a
++// weak device settles at a smooth level instead of stuttering through the
++// whole sequence — the cinematic must never make the site slower.
++const GOV = { SLOW_S: 0.042, MIN_SAMPLES: 40, COOLDOWN_MS: 1200, SMOOTH: 0.12 };
++
++export function useBootSequence(opts: Options) {
++  const optsRef = useRef(opts);
++  optsRef.current = opts; // always call the latest callbacks without re-subscribing
++
++  const stateRef = useRef<BootState>(null as unknown as BootState);
++  if (!stateRef.current) {
++    stateRef.current = createBoot({ reducedMotion: opts.reducedMotion, repeatVisit: opts.repeatVisit });
++  }
++  const loadRef = useRef<Promise<LoadOutcome> | null>(null);
++  const forceMountRef = useRef(false);
++
++  const derive = (s: BootState, f: Frame | null): BootUi => ({
++    stage: s.stage,
++    status: s.status,
++    // reduced motion keeps one calm line instead of flicking through story captions
++    caption: f && !s.reducedMotion ? f.caption : 'connect',
++    attempt: s.attempt,
++    appNeeded: s.status === 'ok' || forceMountRef.current || s.forced,
++  });
++  const [ui, setUi] = useState<BootUi>(() => derive(stateRef.current, null));
++  const uiRef = useRef(ui);
++
++  const push = useCallback((s: BootState, f: Frame | null) => {
++    const next = derive(s, f);
++    if (!same(uiRef.current, next)) {
++      uiRef.current = next;
++      setUi(next);
++    }
++  }, []);
++
++  // ---- real load -> machine, per attempt ----------------------------------
++  useEffect(() => {
++    let cancelled = false;
++    const attempt = ui.attempt;
++    const p = loadRef.current ?? loadLiveData(); // joins the shared in-flight request
++    const apply = (r: LoadOutcome) => {
++      if (cancelled) return;
++      stateRef.current = resolve(stateRef.current, r, attempt);
++    };
++    p.then(apply, () => apply('failed'));
++    return () => { cancelled = true; };
++  }, [ui.attempt]);
++
++  // ---- the one animation loop ---------------------------------------------
++  useEffect(() => {
++    let raf = 0;
++    let cancelled = false;
++    let last = performance.now();
++    const gov = { ema: 1 / 60, n: 0, level: 0 as 0 | 1 | 2, lastBump: 0 };
++
++    const tick = (now: number) => {
++      if (cancelled) return;
++      const dtWall = Math.max(0, (now - last) / 1000);
++      last = now;
++      // Wall time is never clamped (the load timeout depends on it). Only the
++      // cosmetic story clock sits out a long background-tab gap.
++      const dtStory = dtWall > HIDDEN_GAP_S ? 1 / 60 : dtWall;
++
++      if (dtWall <= HIDDEN_GAP_S && !stateRef.current.reducedMotion) {
++        gov.ema += (dtWall - gov.ema) * GOV.SMOOTH;
++        gov.n++;
++        if (gov.n > GOV.MIN_SAMPLES && gov.ema > GOV.SLOW_S && gov.level < 2 && now - gov.lastBump > GOV.COOLDOWN_MS) {
++          gov.level = (gov.level + 1) as 1 | 2;
++          gov.lastBump = now;
++          gov.n = 0;
++          gov.ema = 1 / 30; // re-measure from a fair starting point
++          optsRef.current.onQuality(gov.level);
++        }
++      }
++
++      const prev = stateRef.current;
++      const next = advance(prev, dtWall, dtStory);
++      stateRef.current = next;
++
++      const f = frameAt(next);
++      const ghosts: Frame[] = [];
++      if (next.stage === 'story' && f.speed > 0.3 && !next.reducedMotion) {
++        ghosts.push(frameAt({ ...next, story: next.story - 0.05 }), frameAt({ ...next, story: next.story - 0.1 }));
++      }
++      optsRef.current.render(next, f, ghosts, dtWall);
++
++      cues(prev, next);
++      push(next, f);
++
++      if (next.stage === 'done') {
++        try { sessionStorage.setItem(STORAGE_KEY_SEEN, '1'); } catch { /* private mode */ }
++        optsRef.current.onDone();
++        return;
++      }
++      raf = requestAnimationFrame(tick);
++    };
++
++    raf = requestAnimationFrame(tick);
++    return () => { cancelled = true; cancelAnimationFrame(raf); };
++  }, [push]);
++
++  // ---- user actions ---------------------------------------------------------
++  const retry = useCallback(() => {
++    const s = stateRef.current;
++    if (s.stage !== 'error') return;
++    forceMountRef.current = false;
++    loadRef.current = restartLiveData(); // aborts the old request, starts one fresh
++    stateRef.current = retryMachine(s);
++    optsRef.current.onReset();
++    push(stateRef.current, null);
++  }, [push]);
++
++  const enter = useCallback(() => {
++    if (stateRef.current.stage !== 'error' || forceMountRef.current) return;
++    forceMountRef.current = true;
++    // Start the reveal immediately: the machine holds it at zero progress
++    // until the gate reports the portfolio is painted (appReady).
++    stateRef.current = enterAnyway(stateRef.current);
++    push(stateRef.current, null);
++  }, [push]);
++
++  /** The gate reports the portfolio has committed and painted underneath. */
++  const appReady = useCallback(() => {
++    stateRef.current = markAppReady(stateRef.current);
++  }, []);
++
++  return { ui, retry, enter, appReady };
++}
++
++/** Fire sound cues on story edges. Skipped while fast-forwarding a known outcome. */
++function cues(prev: BootState, next: BootState) {
++  if (next.reducedMotion) return;
++  const crossed = (t: number) => prev.story < t && next.story >= t;
++  if (next.status === 'pending' && next.stage === 'story') {
++    if (crossed(BEAT.NOTICE)) playCue('sense');
++    if (crossed(BEAT.NOTICE + 0.8)) playCue('whoosh');
++    if (crossed(BEAT.RESCUE)) playCue('thwip');
++  }
++  if (prev.stage !== 'catch' && next.stage === 'catch') playCue('catch');
++  if (next.stage === 'impact' && prev.branch < BRANCH.IMPACT_AT && next.branch >= BRANCH.IMPACT_AT) playCue('impact');
++}
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/data/useResumeData.ts b/miles-morales-portfolio-fullstack/frontend/src/data/useResumeData.ts
+index 55051a8..6bc53dc 100644
+--- a/miles-morales-portfolio-fullstack/frontend/src/data/useResumeData.ts
++++ b/miles-morales-portfolio-fullstack/frontend/src/data/useResumeData.ts
+@@ -9,7 +9,8 @@
+ 
+ import { useSyncExternalStore } from 'react';
+ import { RESUME_DATA, ProjectItem, SkillCategory, CertificationItem } from './resumeData';
+-import { api } from '../services/api';
++import { api, isApiConfigured } from '../services/api';
++import { LOAD } from '../boot/bootConfig';
+ 
+ type ResumeDataShape = typeof RESUME_DATA;
+ 
+@@ -30,76 +31,123 @@ function getSnapshot() {
+   return state;
+ }
+ 
+-let hasFetched = false;
++export type LoadOutcome = 'ok' | 'failed';
+ 
+-async function fetchLiveData() {
+-  if (hasFetched) return;
+-  hasFetched = true;
++interface ProfileDto {
++  name: string;
++  heroCodename: string;
++  title: string;
++  tagline: string;
++  phone: string;
++  email: string;
++  location: string;
++  status: string;
++  githubUrl: string;
++  linkedinUrl: string;
++  leetcodeUrl: string;
++  resumePdfPath: string;
++  summary: string;
++  institution: string;
++  degree: string;
++  cgpa: string;
++  timeline: string;
++  relevantCoursework: string[];
++}
++
++// One shared in-flight load. Every caller (the boot cinematic, every
++// useResumeData() render, StrictMode's double-mount) gets the same promise, so
++// the backend is only ever hit once per attempt.
++let inflight: Promise<LoadOutcome> | null = null;
++let controller: AbortController | null = null;
++
++/** Dev-only: ?simulate=fail|500|slow exercises the boot cinematic's paths. */
++function readSimulation(): 'fail' | '500' | 'slow' | null {
++  if (!import.meta.env.DEV) return null;
++  const v = new URLSearchParams(window.location.search).get('simulate');
++  return v === 'fail' || v === '500' || v === 'slow' ? v : null;
++}
++
++const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
++
++async function runLoad(signal: AbortSignal): Promise<LoadOutcome> {
++  const sim = readSimulation();
++  if (sim === 'fail' || sim === '500') {
++    await sleep(600);
++    return 'failed';
++  }
++  if (sim === 'slow') await sleep(LOAD.TIMEOUT_S * 1000 + 2000);
+ 
++  // No backend configured => the static content *is* the app; nothing to wait on.
++  if (!isApiConfigured()) return 'ok';
++
++  const opts = { signal, timeoutMs: LOAD.REQUEST_TIMEOUT_MS };
+   const [profile, missions, skillCategories, credentials] = await Promise.all([
+-    api.getJson<{
+-      name: string;
+-      heroCodename: string;
+-      title: string;
+-      tagline: string;
+-      phone: string;
+-      email: string;
+-      location: string;
+-      status: string;
+-      githubUrl: string;
+-      linkedinUrl: string;
+-      leetcodeUrl: string;
+-      resumePdfPath: string;
+-      summary: string;
+-      institution: string;
+-      degree: string;
+-      cgpa: string;
+-      timeline: string;
+-      relevantCoursework: string[];
+-    }>('/api/profile'),
+-    api.getJson<ProjectItem[]>('/api/projects'),
+-    api.getJson<SkillCategory[]>('/api/skills'),
+-    api.getJson<CertificationItem[]>('/api/certifications'),
++    api.request<ProfileDto>('/api/profile', opts),
++    api.request<ProjectItem[]>('/api/projects', opts),
++    api.request<SkillCategory[]>('/api/skills', opts),
++    api.request<CertificationItem[]>('/api/certifications', opts),
+   ]);
++  if (signal.aborted) return 'failed';
+ 
+   const updates: Partial<ResumeDataShape> = {};
+ 
+-  if (profile) {
++  if (profile.ok) {
++    const p = profile.data;
+     updates.personal = {
+-      name: profile.name,
+-      heroCodename: profile.heroCodename,
+-      title: profile.title,
+-      tagline: profile.tagline,
+-      phone: profile.phone,
+-      email: profile.email,
+-      location: profile.location,
+-      status: profile.status,
++      name: p.name,
++      heroCodename: p.heroCodename,
++      title: p.title,
++      tagline: p.tagline,
++      phone: p.phone,
++      email: p.email,
++      location: p.location,
++      status: p.status,
+       links: {
+-        github: profile.githubUrl,
+-        linkedin: profile.linkedinUrl,
+-        leetcode: profile.leetcodeUrl,
+-        resumePdf: profile.resumePdfPath,
++        github: p.githubUrl,
++        linkedin: p.linkedinUrl,
++        leetcode: p.leetcodeUrl,
++        resumePdf: p.resumePdfPath,
+       },
+-      summary: profile.summary,
++      summary: p.summary,
+     };
+     updates.education = {
+-      institution: profile.institution,
+-      degree: profile.degree,
+-      cgpa: profile.cgpa,
+-      timeline: profile.timeline,
+-      relevantCoursework: profile.relevantCoursework,
++      institution: p.institution,
++      degree: p.degree,
++      cgpa: p.cgpa,
++      timeline: p.timeline,
++      relevantCoursework: p.relevantCoursework,
+     };
+   }
+ 
+-  if (missions && missions.length) updates.missions = missions;
+-  if (skillCategories && skillCategories.length) updates.skillCategories = skillCategories;
+-  if (credentials && credentials.length) updates.credentials = credentials;
++  if (missions.ok && missions.data.length) updates.missions = missions.data;
++  if (skillCategories.ok && skillCategories.data.length) updates.skillCategories = skillCategories.data;
++  if (credentials.ok && credentials.data.length) updates.credentials = credentials.data;
+ 
+   if (Object.keys(updates).length) setState(updates);
++
++  // The profile is the readiness gate. Secondary endpoints failing just means
++  // those sections keep their static content, exactly as before.
++  return profile.ok ? 'ok' : 'failed';
++}
++
++/** Start (or join) the live-data load. Safe to call from anywhere, any number of times. */
++export function loadLiveData(): Promise<LoadOutcome> {
++  if (!inflight) {
++    controller = new AbortController();
++    inflight = runLoad(controller.signal);
++  }
++  return inflight;
++}
++
++/** Abort the current attempt and start a clean one (used by "Try again"). */
++export function restartLiveData(): Promise<LoadOutcome> {
++  controller?.abort();
++  inflight = null;
++  return loadLiveData();
+ }
+ 
+ export function useResumeData(): ResumeDataShape {
+   // Fire-and-forget: safe to call on every render, only does work once.
+-  void fetchLiveData();
++  void loadLiveData();
+   return useSyncExternalStore(subscribe, getSnapshot);
+ }
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/main.tsx b/miles-morales-portfolio-fullstack/frontend/src/main.tsx
+index 964aeb4..ece62b5 100644
+--- a/miles-morales-portfolio-fullstack/frontend/src/main.tsx
++++ b/miles-morales-portfolio-fullstack/frontend/src/main.tsx
+@@ -1,10 +1,18 @@
+ import React from 'react'
+ import ReactDOM from 'react-dom/client'
+ import App from './App'
++import { BootGate } from './boot/BootGate'
++import { loadLiveData } from './data/useResumeData'
+ import './index.css'
+ 
++// Start the real data load now, in parallel with the cinematic chunk
++// downloading, rather than waiting for anything to mount.
++void loadLiveData()
++
+ ReactDOM.createRoot(document.getElementById('root')!).render(
+   <React.StrictMode>
+-    <App />
++    <BootGate>
++      <App />
++    </BootGate>
+   </React.StrictMode>,
+ )
+diff --git a/miles-morales-portfolio-fullstack/frontend/src/services/api.ts b/miles-morales-portfolio-fullstack/frontend/src/services/api.ts
+index b038b78..7b052fe 100644
+--- a/miles-morales-portfolio-fullstack/frontend/src/services/api.ts
++++ b/miles-morales-portfolio-fullstack/frontend/src/services/api.ts
+@@ -8,16 +8,53 @@ export function isApiConfigured(): boolean {
+   return Boolean(API_BASE);
+ }
+ 
+-async function getJson<T>(path: string): Promise<T | null> {
+-  if (!API_BASE) return null;
++export type FetchFailure = 'not-configured' | 'http' | 'network' | 'timeout' | 'aborted';
++export type FetchResult<T> =
++  | { ok: true; data: T }
++  | { ok: false; reason: FetchFailure; status?: number };
++
++interface RequestOptions {
++  /** Caller-owned cancellation (e.g. a retry superseding this attempt). */
++  signal?: AbortSignal;
++  /** Hard cap so a hung backend can't hold the caller forever. */
++  timeoutMs?: number;
++}
++
++// Unlike getJson, this reports *why* a request failed, which the boot
++// cinematic needs to tell "backend is down" from "nothing to fetch".
++async function request<T>(path: string, opts: RequestOptions = {}): Promise<FetchResult<T>> {
++  if (!API_BASE) return { ok: false, reason: 'not-configured' };
++
++  const controller = new AbortController();
++  let timedOut = false;
++  const timer = opts.timeoutMs
++    ? setTimeout(() => { timedOut = true; controller.abort(); }, opts.timeoutMs)
++    : undefined;
++  const onCallerAbort = () => controller.abort();
++  opts.signal?.addEventListener('abort', onCallerAbort, { once: true });
++  if (opts.signal?.aborted) controller.abort();
++
+   try {
+-    const res = await fetch(`${API_BASE}${path}`);
+-    if (!res.ok) return null;
+-    return (await res.json()) as T;
+-  } catch (err) {
+-    console.warn(`[api] GET ${path} failed, using static fallback`, err);
+-    return null;
++    const res = await fetch(`${API_BASE}${path}`, { signal: controller.signal });
++    if (!res.ok) return { ok: false, reason: 'http', status: res.status };
++    return { ok: true, data: (await res.json()) as T };
++  } catch {
++    if (timedOut) return { ok: false, reason: 'timeout' };
++    if (controller.signal.aborted) return { ok: false, reason: 'aborted' };
++    return { ok: false, reason: 'network' };
++  } finally {
++    if (timer) clearTimeout(timer);
++    opts.signal?.removeEventListener('abort', onCallerAbort);
++  }
++}
++
++async function getJson<T>(path: string): Promise<T | null> {
++  const result = await request<T>(path);
++  if (result.ok) return result.data;
++  if (result.reason !== 'not-configured') {
++    console.warn(`[api] GET ${path} failed (${result.reason}), using static fallback`);
+   }
++  return null;
+ }
+ 
+ export interface ContactPayload {
+@@ -49,4 +86,4 @@ export async function submitContactMessage(payload: ContactPayload): Promise<boo
+   }
+ }
+ 
+-export const api = { getJson };
++export const api = { getJson, request };

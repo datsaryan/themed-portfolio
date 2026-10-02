@@ -8,16 +8,53 @@ export function isApiConfigured(): boolean {
   return Boolean(API_BASE);
 }
 
-async function getJson<T>(path: string): Promise<T | null> {
-  if (!API_BASE) return null;
+export type FetchFailure = 'not-configured' | 'http' | 'network' | 'timeout' | 'aborted';
+export type FetchResult<T> =
+  | { ok: true; data: T }
+  | { ok: false; reason: FetchFailure; status?: number };
+
+interface RequestOptions {
+  /** Caller-owned cancellation (e.g. a retry superseding this attempt). */
+  signal?: AbortSignal;
+  /** Hard cap so a hung backend can't hold the caller forever. */
+  timeoutMs?: number;
+}
+
+// Unlike getJson, this reports *why* a request failed, which the boot
+// cinematic needs to tell "backend is down" from "nothing to fetch".
+async function request<T>(path: string, opts: RequestOptions = {}): Promise<FetchResult<T>> {
+  if (!API_BASE) return { ok: false, reason: 'not-configured' };
+
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = opts.timeoutMs
+    ? setTimeout(() => { timedOut = true; controller.abort(); }, opts.timeoutMs)
+    : undefined;
+  const onCallerAbort = () => controller.abort();
+  opts.signal?.addEventListener('abort', onCallerAbort, { once: true });
+  if (opts.signal?.aborted) controller.abort();
+
   try {
-    const res = await fetch(`${API_BASE}${path}`);
-    if (!res.ok) return null;
-    return (await res.json()) as T;
-  } catch (err) {
-    console.warn(`[api] GET ${path} failed, using static fallback`, err);
-    return null;
+    const res = await fetch(`${API_BASE}${path}`, { signal: controller.signal });
+    if (!res.ok) return { ok: false, reason: 'http', status: res.status };
+    return { ok: true, data: (await res.json()) as T };
+  } catch {
+    if (timedOut) return { ok: false, reason: 'timeout' };
+    if (controller.signal.aborted) return { ok: false, reason: 'aborted' };
+    return { ok: false, reason: 'network' };
+  } finally {
+    if (timer) clearTimeout(timer);
+    opts.signal?.removeEventListener('abort', onCallerAbort);
   }
+}
+
+async function getJson<T>(path: string): Promise<T | null> {
+  const result = await request<T>(path);
+  if (result.ok) return result.data;
+  if (result.reason !== 'not-configured') {
+    console.warn(`[api] GET ${path} failed (${result.reason}), using static fallback`);
+  }
+  return null;
 }
 
 export interface ContactPayload {
@@ -49,4 +86,4 @@ export async function submitContactMessage(payload: ContactPayload): Promise<boo
   }
 }
 
-export const api = { getJson };
+export const api = { getJson, request };
