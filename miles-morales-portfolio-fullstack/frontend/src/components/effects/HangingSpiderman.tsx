@@ -101,6 +101,7 @@ export const HangingSpiderman: React.FC = () => {
   // Single animation loop: idle pendulum swing, or spring-back after a release.
   useEffect(() => {
     let raf = 0;
+    let lastIdleRender = 0; // idle swing is slow; re-rendering React at 60fps forever janks scrolling
     posRef.current = { ...restRef.current };
     swingStart.current = performance.now();
 
@@ -117,7 +118,10 @@ export const HangingSpiderman: React.FC = () => {
           y: a.y + Math.cos(ang) * len,
         };
         velRef.current = { x: 0, y: 0 };
-        setPos({ ...posRef.current });
+        if (t - lastIdleRender >= 50) {
+          lastIdleRender = t;
+          setPos({ ...posRef.current });
+        }
       } else if (modeRef.current === 'spring') {
         const k = 0.15;
         const damping = 0.86;
@@ -332,7 +336,7 @@ export const HangingSpiderman: React.FC = () => {
         {/* The figure itself: grabbable, rotates to follow the web line */}
         <g
           transform={`translate(${pos.x}, ${pos.y}) rotate(${angleDeg}) scale(${scale})`}
-          className="pointer-events-auto filter drop-shadow-[0_4px_10px_rgba(0,0,0,0.8)]"
+          className="pointer-events-auto filter drop-shadow-[0_3px_4px_rgba(0,0,0,0.75)]"
           style={{ touchAction: 'none' }}
           onPointerDown={handlePointerDown}
           onPointerMove={handlePointerMove}

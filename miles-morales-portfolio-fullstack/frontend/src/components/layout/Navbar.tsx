@@ -18,7 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 40);
     };
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       unsub();
       window.removeEventListener('scroll', handleScroll);
@@ -46,7 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({ onTriggerVenom }) => {
     <header
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
         isScrolled
-          ? 'bg-void/90 backdrop-blur-md border-b border-borderDark py-2 shadow-2xl'
+          ? 'bg-void/95 border-b border-borderDark py-2 shadow-2xl'
           : 'bg-transparent py-4'
       }`}
     >

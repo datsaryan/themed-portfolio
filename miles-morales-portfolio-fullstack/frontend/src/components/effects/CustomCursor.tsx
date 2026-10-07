@@ -101,6 +101,8 @@ export const CustomCursor: React.FC = () => {
   const speedRef = useRef(0);
   const lastMoveRef = useRef(0);
   const clickedRef = useRef(false);
+  const lastWrapperCss = useRef('');
+  const lastRotorCss = useRef('');
 
   const [isVisible, setIsVisible] = useState(false);
   const [isTouch, setIsTouch] = useState(
@@ -158,12 +160,18 @@ export const CustomCursor: React.FC = () => {
       }
 
       const wrapper = wrapperRef.current;
-      if (wrapper) wrapper.style.transform = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
+      if (!wrapper) lastWrapperCss.current = ''; // node is recreated when the cursor re-appears
+      if (wrapper) {
+        const css = `translate3d(${pos.x}px, ${pos.y}px, 0)`;
+        if (css !== lastWrapperCss.current) { lastWrapperCss.current = css; wrapper.style.transform = css; }
+      }
 
       const rotor = rotorRef.current;
+      if (!rotor) lastRotorCss.current = '';
       if (rotor) {
         const scale = clickedRef.current ? 0.82 : 1;
-        rotor.style.transform = `translate(-50%, -50%) rotate(${angleRef.current.toFixed(1)}deg) scale(${scale})`;
+        const css = `translate(-50%, -50%) rotate(${angleRef.current.toFixed(1)}deg) scale(${scale})`;
+        if (css !== lastRotorCss.current) { lastRotorCss.current = css; rotor.style.transform = css; }
       }
 
       const legs = legsRef.current;

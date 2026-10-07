@@ -19,7 +19,7 @@ export const HalftoneBackground: React.FC = () => {
       <div className="absolute inset-0 bg-void" />
 
       {/* 2. Comic Halftone Screen Pattern */}
-      <div className="absolute inset-0 bg-halftone-dots opacity-40 mix-blend-screen" />
+      <div className="absolute inset-0 bg-halftone-dots opacity-40" />
 
       {/* 2b. Site-wide spider-web weave.
              Tiled lattice across the whole viewport, kept at very low opacity

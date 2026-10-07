@@ -123,7 +123,7 @@ export const ScrollWebFall: React.FC = () => {
     const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const resize = () => {
-      dprRef.current = Math.min(window.devicePixelRatio || 1, 2);
+      dprRef.current = Math.min(window.devicePixelRatio || 1, 1.5);
       canvas.width = window.innerWidth * dprRef.current;
       canvas.height = window.innerHeight * dprRef.current;
       canvas.style.width = `${window.innerWidth}px`;
@@ -169,6 +169,7 @@ export const ScrollWebFall: React.FC = () => {
     };
 
     let lastTime = performance.now();
+    let dirty = false; // true while something is drawn on the canvas
 
     const tick = (t: number) => {
       const dt = Math.min((t - lastTime) / 16.67, 3); // normalize to ~60fps steps
@@ -177,6 +178,16 @@ export const ScrollWebFall: React.FC = () => {
       const w = window.innerWidth;
       const h = window.innerHeight;
       ctx.setTransform(dprRef.current, 0, 0, dprRef.current, 0, 0);
+
+      // Idle: nothing falling and no scroll energy -> clear once, then skip all
+      // canvas work (this loop used to repaint a full-screen canvas every frame).
+      if (dropsRef.current.length === 0 && scrollEnergyRef.current <= 4) {
+        if (dirty) { ctx.clearRect(0, 0, w, h); dirty = false; }
+        scrollEnergyRef.current *= 0.9;
+        rafRef.current = requestAnimationFrame(tick);
+        return;
+      }
+      dirty = true;
       ctx.clearRect(0, 0, w, h);
 
       // Spend scroll energy on spawning new webs.
