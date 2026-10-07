@@ -60,7 +60,10 @@ export function useBootSequence(opts: Options) {
     // reduced motion keeps one calm line instead of flicking through story captions
     caption: f && !s.reducedMotion ? f.caption : 'connect',
     attempt: s.attempt,
-    appNeeded: s.status === 'ok' || forceMountRef.current || s.forced,
+    // Mounting the whole portfolio is the heaviest thing the page does. Doing it
+    // at frame 0 made the story stutter, so wait until the catch beat starts
+    // (the reveal still holds until the page has painted underneath).
+    appNeeded: (s.status === 'ok' && (s.stage === 'catch' || s.stage === 'reveal')) || forceMountRef.current || s.forced,
   });
   const [ui, setUi] = useState<BootUi>(() => derive(stateRef.current, null));
   const uiRef = useRef(ui);

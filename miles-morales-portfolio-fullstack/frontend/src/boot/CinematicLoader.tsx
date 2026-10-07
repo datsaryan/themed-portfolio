@@ -4,7 +4,7 @@ import { Stage } from './scene/Stage';
 import type { StageHandle } from './scene/Stage';
 import { LoadingState } from './scene/LoadingState';
 import { FailureState } from './scene/FailureState';
-import { RevealWeb, scallopPath } from './scene/RevealWeb';
+import { RevealWeb } from './scene/RevealWeb';
 import { useBootSequence } from './useBootSequence';
 import type { BootState } from './bootMachine';
 import { easeInOut } from './choreography';
@@ -61,18 +61,26 @@ export default function CinematicLoader({ onAppNeeded, onDone, appMounted }: Pro
 
     stage.apply(f, ghosts, s.wall, dt, s.stage !== 'error');
 
-    // Web-wipe: a web-shaped hole opens in the overlay from where Miles is.
+    // Reveal: the overlay fades and pushes toward Miles while the web strands
+    // expand and fade. Only opacity/transform change, so Chrome does it on the
+    // compositor. (The old animated clip-path re-rasterised the overlay and the
+    // whole portfolio underneath on every frame, which was the main source of lag.)
     const u = f.reveal.progress;
     const web = webRef.current;
     if (s.stage === 'reveal' && u > 0) {
-      root.classList.add('boot-passthrough');
       const { w, h } = stage.size();
       const c = s.forced ? { x: w / 2, y: h / 2 } : stage.project(f.reveal.cx, f.reveal.cy);
-      const rMax = Math.hypot(Math.max(c.x, w - c.x), Math.max(c.y, h - c.y)) * 1.12;
-      const r = Math.max(1, rMax * easeInOut(u));
-      root.style.clipPath = `path(evenodd, "M0 0H${w}V${h}H0Z ${scallopPath(c.x, c.y, r)}")`;
+      const e = easeInOut(u);
+      if (holeKey.current !== 'open') {
+        root.classList.add('boot-passthrough');
+        root.style.willChange = 'opacity, transform';
+        root.style.transformOrigin = `${c.x.toFixed(0)}px ${c.y.toFixed(0)}px`;
+      }
+      root.style.opacity = String((1 - e).toFixed(3));
+      root.style.transform = `scale(${(1 + e * 0.1).toFixed(3)})`;
       if (web) {
-        web.setAttribute('transform', `translate(${c.x.toFixed(1)} ${c.y.toFixed(1)}) scale(${(r / 100).toFixed(3)})`);
+        const r = Math.hypot(Math.max(c.x, w - c.x), Math.max(c.y, h - c.y)) * 1.12 * e;
+        web.setAttribute('transform', `translate(${c.x.toFixed(1)} ${c.y.toFixed(1)}) scale(${(Math.max(1, r) / 100).toFixed(3)})`);
         web.setAttribute('opacity', String(Math.max(0, 1 - u * u).toFixed(3)));
       }
       holeKey.current = 'open';
@@ -90,7 +98,7 @@ export default function CinematicLoader({ onAppNeeded, onDone, appMounted }: Pro
       holeKey.current = '';
       stageRef.current?.reset();
       const root = rootRef.current;
-      if (root) { root.style.clipPath = ''; root.style.opacity = ''; root.classList.remove('boot-passthrough'); }
+      if (root) { root.style.opacity = ''; root.style.transform = ''; root.style.willChange = ''; root.classList.remove('boot-passthrough'); }
     },
     onDone,
     onQuality: (level) => stageRef.current?.setQuality(level),

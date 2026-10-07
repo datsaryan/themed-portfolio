@@ -150,10 +150,8 @@ export const Stage = forwardRef<StageHandle, Props>(function Stage({ lowPower },
       const lb = easeOut(f.letterbox);
       e.barT.style.transform = `translateY(${(lb - 1) * 100}%)`;
       e.barB.style.transform = `translateY(${(1 - lb) * 100}%)`;
-      // chromatic aberration only in short bursts, and never on weak devices
-      e.layers.action.style.filter = !lowPower && quality.current === 0 && f.aberration > 0.06
-        ? `drop-shadow(${(f.aberration * 5).toFixed(1)}px 0 0 rgba(255,40,70,.55)) drop-shadow(${(-f.aberration * 5).toFixed(1)}px 0 0 rgba(0,210,255,.55))`
-        : '';
+      // (chromatic-aberration drop-shadow filter removed: it forced a full
+      // re-raster of the biggest layer every frame in Chrome)
 
       // ---- particles (screen-space canvas) ----
       const ctx = canvas.current?.getContext('2d');
