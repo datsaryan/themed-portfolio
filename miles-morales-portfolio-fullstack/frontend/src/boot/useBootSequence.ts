@@ -74,16 +74,23 @@ export function useBootSequence(opts: Options) {
   }, []);
 
   // ---- real load -> machine, per attempt ----------------------------------
+  // The portfolio ships with complete static content and silently upgrades to
+  // live backend data when (and if) it arrives, so a slow or failed request is
+  // never a reason to block or break the intro. The cinematic therefore always
+  // plays the success ending: it resolves 'ok' as soon as the load settles
+  // (either way), or after MAX_WAIT_S at the latest.
   useEffect(() => {
     let cancelled = false;
     const attempt = ui.attempt;
     const p = loadRef.current ?? loadLiveData(); // joins the shared in-flight request
-    const apply = (r: LoadOutcome) => {
+    const apply = () => {
       if (cancelled) return;
-      stateRef.current = resolve(stateRef.current, r, attempt);
+      stateRef.current = resolve(stateRef.current, 'ok', attempt);
     };
-    p.then(apply, () => apply('failed'));
-    return () => { cancelled = true; };
+    const MAX_WAIT_S = 3;
+    const timer = window.setTimeout(apply, MAX_WAIT_S * 1000);
+    p.then(apply, apply);
+    return () => { cancelled = true; window.clearTimeout(timer); };
   }, [ui.attempt]);
 
   // ---- the one animation loop ---------------------------------------------
