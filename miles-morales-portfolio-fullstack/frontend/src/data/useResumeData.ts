@@ -7,10 +7,11 @@
 // keeps reading the same shape it always did (personal, education, missions,
 // skillCategories, credentials) — only the *source* of that data changes.
 
-import { useSyncExternalStore } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { RESUME_DATA, ProjectItem, SkillCategory, CertificationItem } from './resumeData';
-import { api, isApiConfigured } from '../services/api';
-import { LOAD } from '../boot/bootConfig';
+import { api, ApiError, ApiErrorKind, isApiConfigured } from '../services/api';
+import { BOOT_TIMEOUT_MS } from '../boot/bootConfig';
+import { BootSimulation, getBootSimulation } from '../boot/bootDebug';
 
 type ResumeDataShape = typeof RESUME_DATA;
 
@@ -31,123 +32,214 @@ function getSnapshot() {
   return state;
 }
 
-export type LoadOutcome = 'ok' | 'failed';
+// ---------------------------------------------------------------------------
+// Load status. The boot cinematic (src/boot) reacts to this — it is the real
+// "is the app/API ready" signal, not a timer.
+//   idle    – nothing requested yet
+//   loading – the backend calls are in flight
+//   ready   – live backend data applied
+//   static  – no backend configured; the built-in content is the source
+//   failed  – a backend call errored or the timeout elapsed (fallback content
+//             still works, so the UI can offer "enter anyway")
+// ---------------------------------------------------------------------------
+export type ResumeLoadStatus = 'idle' | 'loading' | 'ready' | 'static' | 'failed';
 
-interface ProfileDto {
-  name: string;
-  heroCodename: string;
-  title: string;
-  tagline: string;
-  phone: string;
-  email: string;
-  location: string;
-  status: string;
-  githubUrl: string;
-  linkedinUrl: string;
-  leetcodeUrl: string;
-  resumePdfPath: string;
-  summary: string;
-  institution: string;
-  degree: string;
-  cgpa: string;
-  timeline: string;
-  relevantCoursework: string[];
+export interface LoadFailure {
+  kind: ApiErrorKind | 'unknown';
+  status?: number;
+  path?: string;
+  message: string;
 }
 
-// One shared in-flight load. Every caller (the boot cinematic, every
-// useResumeData() render, StrictMode's double-mount) gets the same promise, so
-// the backend is only ever hit once per attempt.
-let inflight: Promise<LoadOutcome> | null = null;
-let controller: AbortController | null = null;
-
-/** Dev-only: ?simulate=fail|500|slow exercises the boot cinematic's paths. */
-function readSimulation(): 'fail' | '500' | 'slow' | null {
-  if (!import.meta.env.DEV) return null;
-  const v = new URLSearchParams(window.location.search).get('simulate');
-  return v === 'fail' || v === '500' || v === 'slow' ? v : null;
+export interface ResumeLoadState {
+  status: ResumeLoadStatus;
+  failure: LoadFailure | null;
+  attempt: number;
 }
 
-const sleep = (ms: number) => new Promise<void>((r) => setTimeout(r, ms));
+let loadState: ResumeLoadState = { status: 'idle', failure: null, attempt: 0 };
+const loadListeners = new Set<() => void>();
+let inflight: Promise<void> | null = null;
 
-async function runLoad(signal: AbortSignal): Promise<LoadOutcome> {
-  const sim = readSimulation();
-  if (sim === 'fail' || sim === '500') {
-    await sleep(600);
-    return 'failed';
-  }
-  if (sim === 'slow') await sleep(LOAD.TIMEOUT_S * 1000 + 2000);
+function setLoadState(next: ResumeLoadState) {
+  loadState = next;
+  loadListeners.forEach((l) => l());
+}
 
-  // No backend configured => the static content *is* the app; nothing to wait on.
-  if (!isApiConfigured()) return 'ok';
+export function subscribeResumeLoad(listener: () => void) {
+  loadListeners.add(listener);
+  return () => {
+    loadListeners.delete(listener);
+  };
+}
 
-  const opts = { signal, timeoutMs: LOAD.REQUEST_TIMEOUT_MS };
-  const [profile, missions, skillCategories, credentials] = await Promise.all([
-    api.request<ProfileDto>('/api/profile', opts),
-    api.request<ProjectItem[]>('/api/projects', opts),
-    api.request<SkillCategory[]>('/api/skills', opts),
-    api.request<CertificationItem[]>('/api/certifications', opts),
-  ]);
-  if (signal.aborted) return 'failed';
+export function getResumeLoadState() {
+  return loadState;
+}
 
-  const updates: Partial<ResumeDataShape> = {};
-
-  if (profile.ok) {
-    const p = profile.data;
-    updates.personal = {
-      name: p.name,
-      heroCodename: p.heroCodename,
-      title: p.title,
-      tagline: p.tagline,
-      phone: p.phone,
-      email: p.email,
-      location: p.location,
-      status: p.status,
-      links: {
-        github: p.githubUrl,
-        linkedin: p.linkedinUrl,
-        leetcode: p.leetcodeUrl,
-        resumePdf: p.resumePdfPath,
+function sleep(ms: number, signal: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal.addEventListener(
+      'abort',
+      () => {
+        clearTimeout(timer);
+        reject(new ApiError('aborted', 'Request aborted'));
       },
-      summary: p.summary,
-    };
-    updates.education = {
-      institution: p.institution,
-      degree: p.degree,
-      cgpa: p.cgpa,
-      timeline: p.timeline,
-      relevantCoursework: p.relevantCoursework,
-    };
-  }
-
-  if (missions.ok && missions.data.length) updates.missions = missions.data;
-  if (skillCategories.ok && skillCategories.data.length) updates.skillCategories = skillCategories.data;
-  if (credentials.ok && credentials.data.length) updates.credentials = credentials.data;
-
-  if (Object.keys(updates).length) setState(updates);
-
-  // The profile is the readiness gate. Secondary endpoints failing just means
-  // those sections keep their static content, exactly as before.
-  return profile.ok ? 'ok' : 'failed';
+      { once: true }
+    );
+  });
 }
 
-/** Start (or join) the live-data load. Safe to call from anywhere, any number of times. */
-export function loadLiveData(): Promise<LoadOutcome> {
-  if (!inflight) {
-    controller = new AbortController();
-    inflight = runLoad(controller.signal);
+// Dev/QA rehearsal of each outcome (see boot/bootDebug.ts).
+async function simulate(mode: BootSimulation, attempt: number, signal: AbortSignal) {
+  switch (mode) {
+    case 'fast':
+      return sleep(150, signal);
+    case 'slow':
+      return sleep(5500, signal);
+    case 'timeout':
+      return sleep(BOOT_TIMEOUT_MS * 3, signal); // never settles before the real timeout
+    case 'fail':
+    case 'fail-always':
+      await sleep(700, signal);
+      if (mode === 'fail-always' || attempt === 1) throw new ApiError('http', 'HTTP 500', 500, '/api/projects');
+      return;
+    case 'down':
+    case 'down-always':
+      await sleep(400, signal);
+      if (mode === 'down-always' || attempt === 1) throw new ApiError('network', 'Failed to fetch', undefined, '/api/profile');
+      return;
   }
+}
+
+async function runLoad(attempt: number) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, BOOT_TIMEOUT_MS);
+
+  try {
+    const sim = getBootSimulation();
+    if (sim) {
+      await simulate(sim, attempt, controller.signal);
+    } else {
+      await fetchLiveData(controller.signal);
+    }
+    setLoadState({ status: sim || isApiConfigured() ? 'ready' : 'static', failure: null, attempt });
+  } catch (err) {
+    controller.abort(); // cancel any sibling requests still in flight
+    const failure: LoadFailure = timedOut
+      ? { kind: 'timeout', message: `No response within ${BOOT_TIMEOUT_MS / 1000}s` }
+      : err instanceof ApiError
+        ? { kind: err.kind, status: err.status, path: err.path, message: err.message }
+        : { kind: 'unknown', message: err instanceof Error ? err.message : 'Unknown error' };
+    setLoadState({ status: 'failed', failure, attempt });
+  } finally {
+    clearTimeout(timer);
+    inflight = null;
+  }
+}
+
+/**
+ * Starts (or joins) the single load. Concurrent callers share one in-flight
+ * promise, so there is never a duplicate API call; only an explicit retry
+ * (after a failure) starts a new attempt.
+ */
+export function loadResume(options?: { force?: boolean }): Promise<void> {
+  if (inflight) return inflight;
+  if (!options?.force && loadState.status !== 'idle') return Promise.resolve();
+
+  if (!isApiConfigured() && !getBootSimulation()) {
+    setLoadState({ status: 'static', failure: null, attempt: loadState.attempt });
+    return Promise.resolve();
+  }
+
+  const attempt = loadState.attempt + 1;
+  setLoadState({ status: 'loading', failure: null, attempt });
+  inflight = runLoad(attempt);
   return inflight;
 }
 
-/** Abort the current attempt and start a clean one (used by "Try again"). */
-export function restartLiveData(): Promise<LoadOutcome> {
-  controller?.abort();
-  inflight = null;
-  return loadLiveData();
+export function retryResumeLoad() {
+  return loadResume({ force: true });
+}
+
+async function fetchLiveData(signal: AbortSignal) {
+  const [profile, missions, skillCategories, credentials] = await Promise.all([
+    api.fetchJson<{
+      name: string;
+      heroCodename: string;
+      title: string;
+      tagline: string;
+      phone: string;
+      email: string;
+      location: string;
+      status: string;
+      githubUrl: string;
+      linkedinUrl: string;
+      leetcodeUrl: string;
+      resumePdfPath: string;
+      summary: string;
+      institution: string;
+      degree: string;
+      cgpa: string;
+      timeline: string;
+      relevantCoursework: string[];
+    }>('/api/profile', signal),
+    api.fetchJson<ProjectItem[]>('/api/projects', signal),
+    api.fetchJson<SkillCategory[]>('/api/skills', signal),
+    api.fetchJson<CertificationItem[]>('/api/certifications', signal),
+  ]);
+
+  const updates: Partial<ResumeDataShape> = {};
+
+  if (profile) {
+    updates.personal = {
+      name: profile.name,
+      heroCodename: profile.heroCodename,
+      title: profile.title,
+      tagline: profile.tagline,
+      phone: profile.phone,
+      email: profile.email,
+      location: profile.location,
+      status: profile.status,
+      links: {
+        github: profile.githubUrl,
+        linkedin: profile.linkedinUrl,
+        leetcode: profile.leetcodeUrl,
+        resumePdf: profile.resumePdfPath,
+      },
+      summary: profile.summary,
+    };
+    updates.education = {
+      institution: profile.institution,
+      degree: profile.degree,
+      cgpa: profile.cgpa,
+      timeline: profile.timeline,
+      relevantCoursework: profile.relevantCoursework,
+    };
+  }
+
+  if (missions && missions.length) updates.missions = missions;
+  if (skillCategories && skillCategories.length) updates.skillCategories = skillCategories;
+  if (credentials && credentials.length) updates.credentials = credentials;
+
+  if (Object.keys(updates).length) setState(updates);
 }
 
 export function useResumeData(): ResumeDataShape {
-  // Fire-and-forget: safe to call on every render, only does work once.
-  void loadLiveData();
+  // Safe on every render: loadResume() is idempotent and dedupes. It runs in
+  // an effect (not during render) so store updates can't trigger React's
+  // "update while rendering" warning.
+  useEffect(() => {
+    void loadResume();
+  }, []);
   return useSyncExternalStore(subscribe, getSnapshot);
+}
+
+export function useResumeLoadState(): ResumeLoadState {
+  return useSyncExternalStore(subscribeResumeLoad, getResumeLoadState);
 }

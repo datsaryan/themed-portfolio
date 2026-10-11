@@ -12,6 +12,7 @@ import { TimelineSection } from './components/sections/TimelineSection';
 import { ContactSection } from './components/sections/ContactSection';
 import { Footer } from './components/layout/Footer';
 import { VenomBlastOverlay } from './components/eastereggs/VenomBlastOverlay';
+import { BootStage } from './components/cinematic/BootStage';
 import { sound } from './audio/soundEngine';
 
 export function App() {
@@ -60,6 +61,10 @@ export function App() {
   return (
     <div className="relative min-h-screen bg-void text-web font-sans selection:bg-spider selection:text-white">
       {/* Visual background layers */}
+      {/* Cinematic boot overlay — reacts to real resume-data load state, sits
+          on top until resolved, then unmounts itself entirely (see BootStage). */}
+      <BootStage />
+
       <HalftoneBackground />
 
       {/* Interactive custom reticle cursor */}

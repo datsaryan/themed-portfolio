@@ -531,6 +531,78 @@ class SoundEngine {
     });
   }
 
+  /** Fast air-rush swoosh — used for a dive or a swing pass. */
+  public playWhoosh() {
+    void this.ensureRunning().then((running) => {
+      if (!running || !this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.32);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+
+      const noise = this.ctx.createBufferSource();
+      noise.buffer = buffer;
+
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = 'bandpass';
+      filter.Q.setValueAtTime(1.1, now);
+      filter.frequency.setValueAtTime(500, now);
+      filter.frequency.linearRampToValueAtTime(2200, now + 0.14);
+      filter.frequency.exponentialRampToValueAtTime(300, now + 0.32);
+
+      const gain = this.ctx.createGain();
+      gain.gain.setValueAtTime(0.001, now);
+      gain.gain.linearRampToValueAtTime(0.24, now + 0.06);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.32);
+
+      noise.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      noise.start(now);
+      noise.stop(now + 0.33);
+    });
+  }
+
+  /** Dull ground impact — a pitched-down thud with a short debris crack. */
+  public playImpact() {
+    void this.ensureRunning().then((running) => {
+      if (!running || !this.ctx || !this.masterGain) return;
+      const now = this.ctx.currentTime;
+
+      const thud = this.ctx.createOscillator();
+      const thudGain = this.ctx.createGain();
+      thud.type = 'sine';
+      thud.frequency.setValueAtTime(150, now);
+      thud.frequency.exponentialRampToValueAtTime(38, now + 0.28);
+      thudGain.gain.setValueAtTime(0.4, now);
+      thudGain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+      thud.connect(thudGain);
+      thudGain.connect(this.masterGain);
+      thud.start(now);
+      thud.stop(now + 0.3);
+
+      const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
+      const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+      const data = buffer.getChannelData(0);
+      for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+
+      const crack = this.ctx.createBufferSource();
+      crack.buffer = buffer;
+      const crackFilter = this.ctx.createBiquadFilter();
+      crackFilter.type = 'highpass';
+      crackFilter.frequency.setValueAtTime(900, now);
+      const crackGain = this.ctx.createGain();
+      crackGain.gain.setValueAtTime(0.22, now);
+      crackGain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+      crack.connect(crackFilter);
+      crackFilter.connect(crackGain);
+      crackGain.connect(this.masterGain);
+      crack.start(now);
+    });
+  }
+
   /**
    * Elastic web-line snap — a springy double-bounce twang, distinct from
    * the whip-crack of playThwip(). Used when the hanging Spider-Man is
@@ -560,108 +632,6 @@ class SoundEngine {
         g.connect(this.masterGain!);
         osc.start(start);
         osc.stop(start + dur + 0.02);
-      });
-    });
-  }
-
-  /**
-   * Boot cinematic cues. Same synthesis vocabulary as playThwip(): filtered
-   * noise for air, a falling sine for weight. All three share a context
-   * guard so a suspended/blocked AudioContext simply stays silent.
-   */
-
-  /** Rushing-air whoosh as Miles dives. */
-  public playWhoosh() {
-    void this.ensureRunning().then((running) => {
-      if (!running || !this.ctx || !this.masterGain) return;
-      const now = this.ctx.currentTime;
-      const len = Math.floor(this.ctx.sampleRate * 0.5);
-      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      const src = this.ctx.createBufferSource();
-      src.buffer = buf;
-      const f = this.ctx.createBiquadFilter();
-      f.type = 'bandpass';
-      f.Q.setValueAtTime(1.4, now);
-      f.frequency.setValueAtTime(300, now);
-      f.frequency.exponentialRampToValueAtTime(2400, now + 0.28);
-      f.frequency.exponentialRampToValueAtTime(500, now + 0.5);
-      const g = this.ctx.createGain();
-      g.gain.setValueAtTime(0.001, now);
-      g.gain.linearRampToValueAtTime(0.3, now + 0.2);
-      g.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      src.connect(f);
-      f.connect(g);
-      g.connect(this.masterGain);
-      src.start(now);
-    });
-  }
-
-  /** Heavy low thud for the moment Gwen hits the ground. */
-  public playImpact() {
-    void this.ensureRunning().then((running) => {
-      if (!running || !this.ctx || !this.masterGain) return;
-      const now = this.ctx.currentTime;
-      const osc = this.ctx.createOscillator();
-      const og = this.ctx.createGain();
-      osc.type = 'sine';
-      osc.frequency.setValueAtTime(150, now);
-      osc.frequency.exponentialRampToValueAtTime(38, now + 0.4);
-      og.gain.setValueAtTime(0.7, now);
-      og.gain.exponentialRampToValueAtTime(0.001, now + 0.5);
-      osc.connect(og);
-      og.connect(this.masterGain);
-      osc.start(now);
-      osc.stop(now + 0.52);
-
-      const len = Math.floor(this.ctx.sampleRate * 0.3);
-      const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
-      const d = buf.getChannelData(0);
-      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
-      const n = this.ctx.createBufferSource();
-      n.buffer = buf;
-      const lp = this.ctx.createBiquadFilter();
-      lp.type = 'lowpass';
-      lp.frequency.setValueAtTime(1400, now);
-      lp.frequency.exponentialRampToValueAtTime(120, now + 0.28);
-      const ng = this.ctx.createGain();
-      ng.gain.setValueAtTime(0.4, now);
-      ng.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
-      n.connect(lp);
-      lp.connect(ng);
-      ng.connect(this.masterGain);
-      n.start(now);
-    });
-  }
-
-  /** Spider-sense tingle: two quick rising blips with a shimmer. */
-  public playSenseTingle() {
-    void this.ensureRunning().then((running) => {
-      if (!running || !this.ctx || !this.masterGain) return;
-      const now = this.ctx.currentTime;
-      [0, 0.09].forEach((offset, i) => {
-        const osc = this.ctx!.createOscillator();
-        const lfo = this.ctx!.createOscillator();
-        const lfoGain = this.ctx!.createGain();
-        const g = this.ctx!.createGain();
-        const start = now + offset;
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(1500 + i * 500, start);
-        osc.frequency.exponentialRampToValueAtTime(2700 + i * 500, start + 0.18);
-        lfo.frequency.value = 38;
-        lfoGain.gain.value = 90;
-        lfo.connect(lfoGain);
-        lfoGain.connect(osc.frequency);
-        g.gain.setValueAtTime(0.001, start);
-        g.gain.linearRampToValueAtTime(0.16, start + 0.02);
-        g.gain.exponentialRampToValueAtTime(0.001, start + 0.2);
-        osc.connect(g);
-        g.connect(this.masterGain!);
-        osc.start(start);
-        lfo.start(start);
-        osc.stop(start + 0.22);
-        lfo.stop(start + 0.22);
       });
     });
   }

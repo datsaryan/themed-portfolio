@@ -8,53 +8,49 @@ export function isApiConfigured(): boolean {
   return Boolean(API_BASE);
 }
 
-export type FetchFailure = 'not-configured' | 'http' | 'network' | 'timeout' | 'aborted';
-export type FetchResult<T> =
-  | { ok: true; data: T }
-  | { ok: false; reason: FetchFailure; status?: number };
+export type ApiErrorKind = 'timeout' | 'network' | 'http' | 'invalid' | 'aborted';
 
-interface RequestOptions {
-  /** Caller-owned cancellation (e.g. a retry superseding this attempt). */
-  signal?: AbortSignal;
-  /** Hard cap so a hung backend can't hold the caller forever. */
-  timeoutMs?: number;
+/** Typed failure so the boot sequence can tell a 500 from a dead network. */
+export class ApiError extends Error {
+  constructor(
+    public kind: ApiErrorKind,
+    message: string,
+    public status?: number,
+    public path?: string
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
 }
 
-// Unlike getJson, this reports *why* a request failed, which the boot
-// cinematic needs to tell "backend is down" from "nothing to fetch".
-async function request<T>(path: string, opts: RequestOptions = {}): Promise<FetchResult<T>> {
-  if (!API_BASE) return { ok: false, reason: 'not-configured' };
-
-  const controller = new AbortController();
-  let timedOut = false;
-  const timer = opts.timeoutMs
-    ? setTimeout(() => { timedOut = true; controller.abort(); }, opts.timeoutMs)
-    : undefined;
-  const onCallerAbort = () => controller.abort();
-  opts.signal?.addEventListener('abort', onCallerAbort, { once: true });
-  if (opts.signal?.aborted) controller.abort();
-
+/** Strict variant of getJson: throws ApiError instead of swallowing failures. */
+async function fetchJson<T>(path: string, signal?: AbortSignal): Promise<T> {
+  if (!API_BASE) throw new ApiError('network', 'API not configured', undefined, path);
+  let res: Response;
   try {
-    const res = await fetch(`${API_BASE}${path}`, { signal: controller.signal });
-    if (!res.ok) return { ok: false, reason: 'http', status: res.status };
-    return { ok: true, data: (await res.json()) as T };
+    res = await fetch(`${API_BASE}${path}`, { signal });
+  } catch (err) {
+    if (signal?.aborted) throw new ApiError('aborted', 'Request aborted', undefined, path);
+    throw new ApiError('network', err instanceof Error ? err.message : 'Network error', undefined, path);
+  }
+  if (!res.ok) throw new ApiError('http', `HTTP ${res.status}`, res.status, path);
+  try {
+    return (await res.json()) as T;
   } catch {
-    if (timedOut) return { ok: false, reason: 'timeout' };
-    if (controller.signal.aborted) return { ok: false, reason: 'aborted' };
-    return { ok: false, reason: 'network' };
-  } finally {
-    if (timer) clearTimeout(timer);
-    opts.signal?.removeEventListener('abort', onCallerAbort);
+    throw new ApiError('invalid', 'Response was not valid JSON', res.status, path);
   }
 }
 
 async function getJson<T>(path: string): Promise<T | null> {
-  const result = await request<T>(path);
-  if (result.ok) return result.data;
-  if (result.reason !== 'not-configured') {
-    console.warn(`[api] GET ${path} failed (${result.reason}), using static fallback`);
+  if (!API_BASE) return null;
+  try {
+    const res = await fetch(`${API_BASE}${path}`);
+    if (!res.ok) return null;
+    return (await res.json()) as T;
+  } catch (err) {
+    console.warn(`[api] GET ${path} failed, using static fallback`, err);
+    return null;
   }
-  return null;
 }
 
 export interface ContactPayload {
@@ -86,4 +82,4 @@ export async function submitContactMessage(payload: ContactPayload): Promise<boo
   }
 }
 
-export const api = { getJson, request };
+export const api = { getJson, fetchJson };
